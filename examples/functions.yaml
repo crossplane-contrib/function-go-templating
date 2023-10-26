@@ -1,0 +1,15 @@
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-template-go
+spec:
+  package: ezgid/gotemplates:v0.0.1 # TODO(ezgidemirel): Update package
+
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-auto-ready
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.1.0
