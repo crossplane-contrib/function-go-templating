@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - release-*
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version (e.g. v0.1.0)
+        required: false
+
+env:
+  # Common versions
+  GO_VERSION: '1.21.3'
+  GOLANGCI_VERSION: 'v1.54.2'
+  DOCKER_BUILDX_VERSION: 'v0.11.2'
+
+  # These environment variables are important to the Crossplane CLI install.sh
+  # script. They determine what version it installs.
+  XP_CHANNEL: master   # TODO(negz): Pin to stable once v1.14 is released.
+  XP_VERSION: current  # TODO(negz): Pin to a version once v1.14 is released.
+
+  # This CI job will automatically push new builds to xpkg.upbound.io if the
+  # XPKG_ACCESS_ID and XPKG_TOKEN secrets are set in the GitHub respository (or
+  # organization) settings. Create a token at https://accounts.upbound.io.
+  XPKG_ACCESS_ID: ${{ secrets.XPKG_ACCESS_ID }}
+
+  # The package to push, without a version tag. The default matches GitHub. For
+  # example xpkg.upbound.io/crossplane/function-template-go.
+  XPKG: xpkg.upbound.io/${{ github.repository}}
+
+  # The package version to push. The default is 0.0.0-gitsha.
+  XPKG_VERSION: ${{ inputs.version }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false  # The golangci-lint action does its own caching.
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: ${{ env.GOLANGCI_VERSION }}
+
+  unit-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run Unit Tests
+        run: go test -v -cover ./...
+
+  # We want to build most packages for the amd64 and arm64 architectures. To
+  # speed this up we build single-platform packages in parallel. We then upload
+  # those packages to GitHub as a build artifact. The push job downloads those
+  # artifacts and pushes them as a single multi-platform package. 
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: true
+      matrix:
+        arch:
+          - amd64
+          - arm64
+    steps:
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: ${{ env.DOCKER_BUILDX_VERSION }}
+          install: true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # We ask Docker to use GitHub Action's native caching support to speed up
+      # the build, per https://docs.docker.com/build/cache/backends/gha/.
+      - name: Build Runtime
+        id: image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: image
+          build-args:
+            GO_VERSION=${{ env.GO_VERSION }}
+          outputs: type=docker,dest=runtime-${{ matrix.arch }}.tar
+      
+      - name: Setup the Crossplane CLI
+        run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
+
+      - name: Build Package
+        run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
+      
+      - name: Upload Single-Platform Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: packages
+          path: "*.xpkg"
+          if-no-files-found: error
+          retention-days: 1
+
+  # This job downloads the single-platform packages built by the build job, and
+  # pushes them as a multi-platform package. We only push the package it the
+  # XPKG_ACCESS_ID and XPKG_TOKEN secrets were provided.
+  push:
+    runs-on: ubuntu-22.04
+    needs:
+      - build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Single-Platform Packages
+        uses: actions/download-artifact@v3
+        with:
+          name: packages
+          path: .
+
+      - name: Setup the Crossplane CLI
+        run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
+
+      - name: Login to Upbound
+        uses: docker/login-action@v3
+        if: env.XPKG_ACCESS_ID != ''
+        with:
+          registry: xpkg.upbound.io
+          username: ${{ secrets.XPKG_ACCESS_ID }}
+          password: ${{ secrets.XPKG_TOKEN }}
+
+      # If a version wasn't explicitly passed as a workflow_dispatch input we
+      # default to version v0.0.0-shortsha, for example v0.0.0-8ed5691.
+      - name: Set Default Multi-Platform Package Version
+        if: env.XPKG_VERSION == ''
+        run: echo "XPKG_VERSION=v0.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Push Multi-Platform Package to Upbound
+        if: env.XPKG_ACCESS_ID != ''
+        run: "./crossplane --verbose xpkg push --package-files $(echo *.xpkg|tr ' ' ,) ${{ env.XPKG }}:${{ env.XPKG_VERSION }}"
