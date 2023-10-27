@@ -51,6 +51,20 @@ spec:
                 name: sample-access-key-secret-{{ $i }}
                 namespace: crossplane-system
             {{- end }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            metadata:
+              annotations:
+                  crossplane.io/composition-resource-name: connection-details
+              name: connection-details
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              username: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.username }}
+              password: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.password }}
+            {{ end }}
     - step: ready
       functionRef:
         name: function-auto-ready

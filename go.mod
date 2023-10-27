@@ -1,4 +1,4 @@
-module github.com/crossplane/function-go-templating
+module github.com/crossplane-contrib/function-go-templating
 
 go 1.20
 

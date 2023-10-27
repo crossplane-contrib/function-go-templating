@@ -6,15 +6,15 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
-	"github.com/crossplane/function-go-templating/input/v1beta1"
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 const dotCharacter = 46
 
 // TemplateGetter interface is used to read templates from different sources
 type TemplateGetter interface {
-	// GetTemplate returns the templates from the datasource
-	GetTemplate() string
+	// GetTemplates returns the templates from the datasource
+	GetTemplates() string
 }
 
 // NewTemplateSourceGetter returns a TemplateGetter based on the cd source
@@ -25,7 +25,7 @@ func NewTemplateSourceGetter(in *v1beta1.Input) (TemplateGetter, error) {
 	case v1beta1.FileSystemSource:
 		return newFileSource(in)
 	default:
-		return nil, errors.Errorf("invalid cd source: %s", in.Source)
+		return nil, errors.Errorf("invalid input source: %s", in.Source)
 	}
 }
 
@@ -40,8 +40,8 @@ type FileSource struct {
 	Template   string
 }
 
-// GetTemplate returns the inline template
-func (is *InlineSource) GetTemplate() string {
+// GetTemplates returns the inline template
+func (is *InlineSource) GetTemplates() string {
 	return is.Template
 }
 
@@ -51,8 +51,8 @@ func newInlineSource(in *v1beta1.Input) (*InlineSource, error) {
 	}, nil
 }
 
-// GetTemplate returns the templates in the folder
-func (fs *FileSource) GetTemplate() string {
+// GetTemplates returns the templates in the folder
+func (fs *FileSource) GetTemplates() string {
 	return fs.Template
 }
 

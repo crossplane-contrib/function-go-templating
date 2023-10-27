@@ -16,7 +16,7 @@ import (
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
-	"github.com/crossplane/function-go-templating/input/v1beta1"
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 var (
@@ -25,6 +25,11 @@ var (
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
+	cdWithReadyWrong      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd","meta.gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-cd"}}`
+	cdWithReadyTrue       = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd","meta.gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-cd"}}`
+
+	metaResourceInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
+	metaResourceConDet  = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}` // encoded string "value"
 
 	xr           = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithStatus = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"ready":"true"}}`
@@ -64,7 +69,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(invalidFunctionFmt, wrongTempErr),
+							Message:  "invalid function input: cannot get the function input: invalid input source: wrong",
 						},
 					},
 				},
@@ -81,7 +86,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(invalidFunctionFmt, wrongTempErr),
+							Message:  "invalid function input: cannot get the function input: invalid input source: ",
 						},
 					},
 				},
@@ -104,7 +109,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf("cannot get composition resource name: %s annotation not found", AnnotationKeyCompositionResourceName),
+							Message:  fmt.Sprintf("cannot get composition resource name of cool-cd: %s annotation not found", annotationKeyCompositionResourceName),
 						},
 					},
 				},
@@ -366,7 +371,171 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function cd: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
+							Message:  "invalid function input: cannot get the function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
+						},
+					},
+				},
+			},
+		},
+		"ReadyStatusAnnotationNotValid": {
+			reason: "The Function should return a fatal result if the ready annotation is not valid.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdWithReadyWrong},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  fmt.Sprintf(errFmtInvalidFunction, fmt.Sprintf(errFmtInvalidReadyValue, "wrongValue")),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"ReadyStatusAnnotation": {
+			reason: "The Function should return desired composed resource with True ready state.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdWithReadyTrue},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+							},
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+								Ready:    1,
+							},
+						},
+					},
+				},
+			},
+		},
+		"InvalidMetaKind": {
+			reason: "The Function should return a fatal result if the meta kind is invalid.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: metaResourceInvalid},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  fmt.Sprintf(errFmtInvalidMetaType, "InvalidMeta"),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"CompositeConnectionDetails": {
+			reason: "The Function should return the desired composite with CompositeConnectionDetails.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: metaResourceConDet},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource:          resource.MustStructJSON(xr),
+							ConnectionDetails: map[string][]byte{"key": []byte("value")},
 						},
 					},
 				},

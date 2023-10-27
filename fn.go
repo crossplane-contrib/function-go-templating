@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/encoding/protojson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -19,9 +19,10 @@ import (
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
+	fn "github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
-	"github.com/crossplane/function-go-templating/input/v1beta1"
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 // Function returns whatever response you ask it to.
@@ -32,14 +33,19 @@ type Function struct {
 }
 
 const (
-	invalidFunctionFmt = "invalid function input: %s"
-	wrongTempErr       = "templates are required either inline or from filesystem path"
-	cannotGetErr       = "cannot get the function cd"
-	cannotParseErr     = "cannot parse the provided templates"
+	errFmtInvalidFunction   = "invalid function input: %s"
+	errFmtInvalidReadyValue = "%s is invalid, ready annotation must be True, Unspecified, or False"
+	errFmtInvalidMetaType   = "invalid meta kind %s"
+
+	errCannotGet   = "cannot get the function input"
+	errCannotParse = "cannot parse the provided templates"
 )
 
 const (
-	AnnotationKeyCompositionResourceName = "crossplane.io/composition-resource-name"
+	annotationKeyCompositionResourceName = "crossplane.io/composition-resource-name"
+	annotationKeyReady                   = "meta.gotemplating.fn.crossplane.io/ready"
+
+	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
 
 // RunFunction runs the Function.
@@ -50,24 +56,19 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 	in := &v1beta1.Input{}
 	if err := request.GetInput(req, in); err != nil {
-		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function cd from %T", req))
-		return rsp, nil
-	}
-
-	if !isValidInputSource(in) {
-		response.Fatal(rsp, errors.New(fmt.Sprintf(invalidFunctionFmt, wrongTempErr)))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
 	}
 
 	tg, err := NewTemplateSourceGetter(in)
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotGetErr)))
+		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(errFmtInvalidFunction, errCannotGet)))
 		return rsp, nil
 	}
 
-	tmpl, err := GetNewTemplateWithFunctionMaps().Parse(tg.GetTemplate())
+	tmpl, err := GetNewTemplateWithFunctionMaps().Parse(tg.GetTemplates())
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotParseErr)))
+		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(errFmtInvalidFunction, errCannotParse)))
 		return rsp, nil
 	}
 
@@ -112,37 +113,37 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	// Convert the rendered manifests to a list of desired composed resources.
+	//  Get the desired composed resources from the request.
 	dcd, err := request.GetDesiredComposedResources(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get desired composed resources"))
 		return rsp, nil
 	}
 
+	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
 		cd := resource.NewDesiredComposed()
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
-		// update desired composite status only
+		// Update only the status of the desired composite resource.
 		if cd.Resource.GetAPIVersion() == dxr.Resource.GetAPIVersion() && cd.Resource.GetKind() == dxr.Resource.GetKind() {
-			dst, err := dxr.Resource.GetStringObject("status")
-
-			if err != nil && !fieldpath.IsNotFound(err) {
+			dst := make(map[string]any)
+			if err := dxr.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
 				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
 				return rsp, nil
 			}
 
-			if fieldpath.IsNotFound(err) {
-				dst = make(map[string]string)
-			}
-
-			src, err := cd.Resource.GetStringObject("status")
-			if err != nil && !fieldpath.IsNotFound(err) {
+			src := make(map[string]any)
+			if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
 				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
 				return rsp, nil
 			}
 
-			maps.Copy(dst, src)
+			for k, v := range src {
+				fmt.Println(k, v)
+				dst[k] = v
+			}
+
 			if err := fieldpath.Pave(dxr.Resource.Object).SetValue("status", dst); err != nil {
 				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
 				return rsp, nil
@@ -151,9 +152,42 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			continue
 		}
 
+		// Set composite resource's connection details.
+		if cd.Resource.GetAPIVersion() == metaApiVersion {
+			switch obj.GetKind() {
+			case "CompositeConnectionDetails":
+				con, _ := cd.Resource.GetStringObject("data")
+				for k, v := range con {
+					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
+					dxr.ConnectionDetails[k] = d
+				}
+			default:
+				response.Fatal(rsp, fmt.Errorf(errFmtInvalidMetaType, obj.GetKind()))
+				return rsp, nil
+			}
+
+			continue
+		}
+
+		// Set ready state.
+		if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
+			if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
+				response.Fatal(rsp, fmt.Errorf(fmt.Sprintf(errFmtInvalidFunction, errFmtInvalidReadyValue), v))
+				return rsp, nil
+			}
+
+			cd.Ready = fn.Ready(v)
+
+			// remove meta annotation
+			ann := cd.Resource.GetAnnotations()
+			delete(ann, annotationKeyReady)
+			cd.Resource.SetAnnotations(ann)
+		}
+
+		// Add resource to the desired composed resources map.
 		name, err := getCompositionResourceName(obj)
 		if err != nil {
-			response.Fatal(rsp, errors.Wrap(err, "cannot get composition resource name"))
+			response.Fatal(rsp, errors.Wrapf(err, "cannot get composition resource name of %s", obj.GetName()))
 			return rsp, nil
 		}
 
@@ -192,21 +226,10 @@ func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]interface{}, er
 	return mReq, nil
 }
 
-func isValidInputSource(in *v1beta1.Input) bool {
-	switch in.Source {
-	case v1beta1.InlineSource:
-		return in.Inline != nil
-	case v1beta1.FileSystemSource:
-		return in.FileSystem != nil
-	default:
-		return false
-	}
-}
-
 func getCompositionResourceName(obj *unstructured.Unstructured) (resource.Name, error) {
-	if v, found := obj.GetAnnotations()[AnnotationKeyCompositionResourceName]; found {
+	if v, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]; found {
 		return resource.Name(v), nil
 	}
 
-	return "", errors.Errorf("%s annotation not found", AnnotationKeyCompositionResourceName)
+	return "", errors.Errorf("%s annotation not found", annotationKeyCompositionResourceName)
 }
