@@ -22,17 +22,25 @@ type Input struct {
 	// Source specifies the different types of input sources that can be used with this function
 	Source InputSource `json:"source"`
 	// Inline is the inline form input of the templates
-	Inline *string `json:"inline,omitempty"`
-	// Path is the folder path where the templates are located
-	Path *string `json:"path,omitempty"`
+	Inline *InputSourceInline `json:"inline,omitempty"`
+	// FileSystem is the folder path where the templates are located
+	FileSystem *InputSourceFileSystem `json:"fileSystem,omitempty"`
 }
 
 type InputSource string
 
 const (
-	// InputSourceInline indicates that function will get its input as inline
-	InputSourceInline InputSource = "Inline"
+	// InlineSource indicates that function will get its input as inline
+	InlineSource InputSource = "Inline"
 
-	// InputSourceFile indicates that function will get its input from a folder
-	InputSourceFile InputSource = "File"
+	// FileSystemSource indicates that function will get its input from a folder
+	FileSystemSource InputSource = "FileSystem"
 )
+
+type InputSourceInline struct {
+	Template string `json:"template,omitempty"`
+}
+
+type InputSourceFileSystem struct {
+	DirPath string `json:"dirPath,omitempty"`
+}

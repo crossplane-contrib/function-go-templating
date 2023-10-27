@@ -16,36 +16,41 @@ spec:
         apiVersion: gotemplate.fn.crossplane.io/v1beta1
         kind: GoTemplate
         source: Inline
-        inline: |
-          {{- range $i := until ( .observed.composite.resource.spec.count | int ) }}
-          ---
-          apiVersion: iam.aws.upbound.io/v1beta1
-          kind: User
-          metadata:
-            name: test-user-{{ $i }}
-            labels:
-              testing.upbound.io/example-name: test-user-{{ $i }}
-            {{ if eq $.observed.resources nil }}
-              dummy: {{ randomChoice "foo" "bar" "baz" }}
-            {{ else }}
-              dummy: {{ ( index $.observed.resources ( print "test-user-" $i ) ).resource.metadata.labels.dummy }}
-            {{ end }}
-          spec:
-            forProvider: {}
-          ---
-          apiVersion: iam.aws.upbound.io/v1beta1
-          kind: AccessKey
-          metadata:
-            name: sample-access-key-{{ $i }}
-          spec:
-            forProvider:
-              userSelector:
-                matchLabels:
-                  testing.upbound.io/example-name: test-user-{{ $i }}
-            writeConnectionSecretToRef:
-              name: sample-access-key-secret-{{ $i }}
-              namespace: crossplane-system
-          {{- end }}
+        inline:
+          template: |
+            {{- range $i := until ( .observed.composite.resource.spec.count | int ) }}
+            ---
+            apiVersion: iam.aws.upbound.io/v1beta1
+            kind: User
+            metadata:
+              annotations:
+                crossplane.io/composition-resource-name: test-user-{{ $i }}
+              name: test-user-{{ $i }}
+              labels:
+                testing.upbound.io/example-name: test-user-{{ $i }}
+              {{ if eq $.observed.resources nil }}
+                dummy: {{ randomChoice "foo" "bar" "baz" }}
+              {{ else }}
+                dummy: {{ ( index $.observed.resources ( print "test-user-" $i ) ).resource.metadata.labels.dummy }}
+              {{ end }}
+            spec:
+              forProvider: {}
+            ---
+            apiVersion: iam.aws.upbound.io/v1beta1
+            kind: AccessKey
+            metadata:
+              annotations:
+                  crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+              name: sample-access-key-{{ $i }}
+            spec:
+              forProvider:
+                userSelector:
+                  matchLabels:
+                    testing.upbound.io/example-name: test-user-{{ $i }}
+              writeConnectionSecretToRef:
+                name: sample-access-key-secret-{{ $i }}
+                namespace: crossplane-system
+            {{- end }}
     - step: ready
       functionRef:
         name: function-auto-ready

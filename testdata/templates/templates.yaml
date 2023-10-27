@@ -1,0 +1,8 @@
+apiVersion: example.org/v1
+kind: CD
+metadata:
+  name: cool-cd
+  annotations:
+    crossplane.io/composition-resource-name: cool-cd
+  labels:
+    belongsTo: {{ .observed.composite.resource.metadata.name|quote }}

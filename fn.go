@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"io"
 
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/encoding/protojson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
@@ -31,9 +33,13 @@ type Function struct {
 
 const (
 	invalidFunctionFmt = "invalid function input: %s"
-	noTempError        = "templates are required either inline or from a path"
-	cannotGet          = "cannot get the function input"
-	cannotParse        = "cannot parse the provided templates"
+	wrongTempErr       = "templates are required either inline or from filesystem path"
+	cannotGetErr       = "cannot get the function cd"
+	cannotParseErr     = "cannot parse the provided templates"
+)
+
+const (
+	AnnotationKeyCompositionResourceName = "crossplane.io/composition-resource-name"
 )
 
 // RunFunction runs the Function.
@@ -44,25 +50,24 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 	in := &v1beta1.Input{}
 	if err := request.GetInput(req, in); err != nil {
-		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
+		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function cd from %T", req))
 		return rsp, nil
 	}
 
-	if in.Inline == nil && in.Path == nil {
-		response.Fatal(rsp, errors.New(fmt.Sprintf(invalidFunctionFmt, noTempError)))
+	if !isValidInputSource(in) {
+		response.Fatal(rsp, errors.New(fmt.Sprintf(invalidFunctionFmt, wrongTempErr)))
 		return rsp, nil
 	}
 
-	tg := NewTemplateGetter(in)
-	input, err := tg.GetTemplate()
+	tg, err := NewTemplateSourceGetter(in)
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotGet)))
+		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotGetErr)))
 		return rsp, nil
 	}
 
-	tmpl, err := GetNewTemplateWithFunctionMaps().Parse(input)
+	tmpl, err := GetNewTemplateWithFunctionMaps().Parse(tg.GetTemplate())
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotParse)))
+		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(invalidFunctionFmt, cannotParseErr)))
 		return rsp, nil
 	}
 
@@ -118,12 +123,41 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		cd := resource.NewDesiredComposed()
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
-		// do not add the composite resource to composed resources
+		// update desired composite status only
 		if cd.Resource.GetAPIVersion() == dxr.Resource.GetAPIVersion() && cd.Resource.GetKind() == dxr.Resource.GetKind() {
+			dst, err := dxr.Resource.GetStringObject("status")
+
+			if err != nil && !fieldpath.IsNotFound(err) {
+				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+				return rsp, nil
+			}
+
+			if fieldpath.IsNotFound(err) {
+				dst = make(map[string]string)
+			}
+
+			src, err := cd.Resource.GetStringObject("status")
+			if err != nil && !fieldpath.IsNotFound(err) {
+				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+				return rsp, nil
+			}
+
+			maps.Copy(dst, src)
+			if err := fieldpath.Pave(dxr.Resource.Object).SetValue("status", dst); err != nil {
+				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
+				return rsp, nil
+			}
+
 			continue
 		}
 
-		dcd[resource.Name(obj.GetName())] = cd
+		name, err := getCompositionResourceName(obj)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot get composition resource name"))
+			return rsp, nil
+		}
+
+		dcd[name] = cd
 	}
 
 	f.log.Debug("desired composite resource", "desiredComposite:", dxr)
@@ -139,7 +173,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	response.Normalf(rsp, "I was run with input source %q", in.Source)
+	response.Normalf(rsp, "I was run with cd source %q", in.Source)
 
 	return rsp, nil
 }
@@ -156,4 +190,23 @@ func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]interface{}, er
 	}
 
 	return mReq, nil
+}
+
+func isValidInputSource(in *v1beta1.Input) bool {
+	switch in.Source {
+	case v1beta1.InlineSource:
+		return in.Inline != nil
+	case v1beta1.FileSystemSource:
+		return in.FileSystem != nil
+	default:
+		return false
+	}
+}
+
+func getCompositionResourceName(obj *unstructured.Unstructured) (resource.Name, error) {
+	if v, found := obj.GetAnnotations()[AnnotationKeyCompositionResourceName]; found {
+		return resource.Name(v), nil
+	}
+
+	return "", errors.Errorf("%s annotation not found", AnnotationKeyCompositionResourceName)
 }

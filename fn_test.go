@@ -20,12 +20,17 @@ import (
 )
 
 var (
-	input        = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
-	inputTmpl    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
-	wrongTmpl    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
-	missingKind  = `{"apiVersion":"example.org/v1"}`
+	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
+	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
+	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
+	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
+	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
+
 	xr           = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
-	xrWithStatus = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithStatus = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"ready":"true"}}`
+
+	path      = "testdata/templates"
+	wrongPath = "testdata/wrong"
 )
 
 func TestRunFunction(t *testing.T) {
@@ -43,8 +48,30 @@ func TestRunFunction(t *testing.T) {
 		args   args
 		want   want
 	}{
+		"WrongInputSourceType": {
+			reason: "The Function should return a fatal result if the cd source type is wrong",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: "wrong",
+						}),
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  fmt.Sprintf(invalidFunctionFmt, wrongTempErr),
+						},
+					},
+				},
+			},
+		},
 		"NoInput": {
-			reason: "The Function should return a fatal result if no input was specified",
+			reason: "The Function should return a fatal result if no cd was specified",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{},
 			},
@@ -54,7 +81,30 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(invalidFunctionFmt, noTempError),
+							Message:  fmt.Sprintf(invalidFunctionFmt, wrongTempErr),
+						},
+					},
+				},
+			},
+		},
+		"NoResourceNameAnnotation": {
+			reason: "The Function should return a fatal result if the cd does not have a composition-resource-name annotation",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdMissingResourceName},
+						}),
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  fmt.Sprintf("cannot get composition resource name: %s annotation not found", AnnotationKeyCompositionResourceName),
 						},
 					},
 				},
@@ -66,8 +116,8 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.Input{
-							Source: v1beta1.InputSourceInline,
-							Inline: &missingKind,
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdMissingKind},
 						}),
 				},
 			},
@@ -77,7 +127,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf("cannot decode manifest: Object 'Kind' is missing in '%s'", missingKind),
+							Message:  fmt.Sprintf("cannot decode manifest: Object 'Kind' is missing in '%s'", cdMissingKind),
 						},
 					},
 				},
@@ -89,8 +139,8 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.Input{
-							Source: v1beta1.InputSourceInline,
-							Inline: &wrongTmpl,
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdWrongTmpl},
 						},
 					),
 					Observed: &fnv1beta1.State{
@@ -123,14 +173,14 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"ResponseIsReturnedWithNoChange": {
-			reason: "The Function should return the desired composite resource and input composed resource without any changes.",
+			reason: "The Function should return the desired composite resource and cd composed resource without any changes.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "nochange"},
 					Input: resource.MustStructObject(
 						&v1beta1.Input{
-							Source: v1beta1.InputSourceInline,
-							Inline: &input,
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cd},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -143,7 +193,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(input),
+								Resource: resource.MustStructJSON(cd),
 							},
 						},
 					},
@@ -155,7 +205,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with input source %q", v1beta1.InputSourceInline),
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -164,7 +214,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(input),
+								Resource: resource.MustStructJSON(cd),
 							},
 						},
 					},
@@ -172,14 +222,14 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"ResponseIsReturnedWithTemplating": {
-			reason: "The Function should return the desired composite resource and the desired number of composed resources.",
+			reason: "The Function should return the desired composite resource and the templated composed resources.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
 					Input: resource.MustStructObject(
 						&v1beta1.Input{
-							Source: v1beta1.InputSourceInline,
-							Inline: &inputTmpl,
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: cdTmpl},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -199,7 +249,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with input source %q", v1beta1.InputSourceInline),
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -208,7 +258,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
 						},
 					},
@@ -222,8 +272,8 @@ func TestRunFunction(t *testing.T) {
 					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
 						&v1beta1.Input{
-							Source: v1beta1.InputSourceInline,
-							Inline: &xrWithStatus,
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.InputSourceInline{Template: xrWithStatus},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -243,12 +293,80 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with input source %q", v1beta1.InputSourceInline),
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xrWithStatus),
+						},
+					},
+				},
+			},
+		},
+		"ResponseIsReturnedWithTemplatingFS": {
+			reason: "The Function should return the desired composite resource and the templated composed resources with FileSystem cd.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source:     v1beta1.FileSystemSource,
+							FileSystem: &v1beta1.InputSourceFileSystem{DirPath: path},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
+							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.FileSystemSource),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"CannotReadTemplatesFromFS": {
+			reason: "The Function should return a fatal result if the templates cannot be read from the filesystem.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.Input{
+							Source:     v1beta1.FileSystemSource,
+							FileSystem: &v1beta1.InputSourceFileSystem{DirPath: wrongPath},
+						},
+					),
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: cannot get the function cd: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
 						},
 					},
 				},

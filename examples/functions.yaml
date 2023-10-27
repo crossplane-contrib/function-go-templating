@@ -1,10 +1,36 @@
 ---
 apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: mount-templates
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+            - name: package-runtime
+              volumeMounts:
+                - mountPath: /templates
+                  name: templates
+                  readOnly: true
+          volumes:
+          - name: templates
+            configMap:
+              name: templates
+
+---
+
+apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
-  name: function-template-go
+  name: function-go-templating
 spec:
-  package: ezgid/gotemplates:v0.0.1 # TODO(ezgidemirel): Update package
+  package: xpkg.upbound.io/ezgi/function-go-templating:v0.0.1  # TODO(ezgidemirel): Update package
+  packagePullPolicy: Always
+  runtimeConfigRef:
+    name: mount-templates
 
 ---
 apiVersion: pkg.crossplane.io/v1beta1
