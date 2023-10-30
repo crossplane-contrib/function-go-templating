@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"dario.cat/mergo"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -108,14 +109,14 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	}
 
 	// Get the desired composite resource from the request.
-	dxr, err := request.GetDesiredCompositeResource(req)
+	desiredComposite, err := request.GetDesiredCompositeResource(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite resource"))
 		return rsp, nil
 	}
 
 	//  Get the desired composed resources from the request.
-	dcd, err := request.GetDesiredComposedResources(req)
+	desiredComposed, err := request.GetDesiredComposedResources(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot get desired composed resources"))
 		return rsp, nil
@@ -126,10 +127,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		cd := resource.NewDesiredComposed()
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
+		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Update only the status of the desired composite resource.
-		if cd.Resource.GetAPIVersion() == dxr.Resource.GetAPIVersion() && cd.Resource.GetKind() == dxr.Resource.GetKind() {
+		if cd.Resource.GetAPIVersion() == desiredComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == desiredComposite.Resource.GetKind() {
 			dst := make(map[string]any)
-			if err := dxr.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
+			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
 				response.Fatal(rsp, errors.Wrap(err, "cannot get existing composite status"))
 				return rsp, nil
 			}
@@ -140,12 +142,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 				return rsp, nil
 			}
 
-			for k, v := range src {
-				fmt.Println(k, v)
-				dst[k] = v
+			if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
+				response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
+				return rsp, nil
 			}
 
-			if err := fieldpath.Pave(dxr.Resource.Object).SetValue("status", dst); err != nil {
+			if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
 				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
 				return rsp, nil
 			}
@@ -153,6 +155,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			continue
 		}
 
+		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Set composite resource's connection details.
 		if cd.Resource.GetAPIVersion() == metaApiVersion {
 			switch obj.GetKind() {
@@ -160,7 +163,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 				con, _ := cd.Resource.GetStringObject("data")
 				for k, v := range con {
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
-					dxr.ConnectionDetails[k] = d
+					desiredComposite.ConnectionDetails[k] = d
 				}
 			default:
 				response.Fatal(rsp, fmt.Errorf(errFmtInvalidMetaType, obj.GetKind()))
@@ -170,6 +173,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			continue
 		}
 
+		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Set ready state.
 		if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
 			if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
@@ -179,32 +183,32 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 			cd.Ready = fn.Ready(v)
 
-			// remove meta annotation
+			// Remove meta annotation.
 			meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
 		}
 
+		// Remove resource name annotation.
+		meta.RemoveAnnotations(cd.Resource, annotationKeyCompositionResourceName)
+
 		// Add resource to the desired composed resources map.
-		name, err := getCompositionResourceName(obj)
-		if err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "cannot get composition resource name of %s", obj.GetName()))
+		name, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]
+		if !found {
+			response.Fatal(rsp, errors.Errorf("cannot get composition resource name of %s", obj.GetName()))
 			return rsp, nil
 		}
 
-		// remove resource name annotation
-		meta.RemoveAnnotations(cd.Resource, annotationKeyCompositionResourceName)
-
-		dcd[name] = cd
+		desiredComposed[resource.Name(name)] = cd
 	}
 
-	f.log.Debug("desired composite resource", "desiredComposite:", dxr)
-	f.log.Debug("constructed desired composed resources", "desiredComposed:", dcd)
+	f.log.Debug("desired composite resource", "desiredComposite:", desiredComposite)
+	f.log.Debug("constructed desired composed resources", "desiredComposed:", desiredComposed)
 
-	if err := response.SetDesiredComposedResources(rsp, dcd); err != nil {
+	if err := response.SetDesiredComposedResources(rsp, desiredComposed); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot desired composed resources"))
 		return rsp, nil
 	}
 
-	if err := response.SetDesiredCompositeResource(rsp, dxr); err != nil {
+	if err := response.SetDesiredCompositeResource(rsp, desiredComposite); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite resource"))
 		return rsp, nil
 	}
@@ -226,12 +230,4 @@ func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]any, error) {
 	}
 
 	return mReq, nil
-}
-
-func getCompositionResourceName(obj *unstructured.Unstructured) (resource.Name, error) {
-	if v, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]; found {
-		return resource.Name(v), nil
-	}
-
-	return "", errors.Errorf("%s annotation not found", annotationKeyCompositionResourceName)
 }

@@ -3,6 +3,7 @@ module github.com/crossplane-contrib/function-go-templating
 go 1.20
 
 require (
+	dario.cat/mergo v1.0.0
 	github.com/alecthomas/kong v0.8.1
 	github.com/crossplane/crossplane-runtime v1.14.0-rc.1
 	github.com/crossplane/function-sdk-go v0.0.0-20231025230156-142a5c0bc9cc
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
