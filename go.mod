@@ -8,7 +8,6 @@ require (
 	github.com/crossplane/function-sdk-go v0.0.0-20231025230156-142a5c0bc9cc
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572
 	github.com/google/go-cmp v0.6.0
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
 	k8s.io/apimachinery v0.28.3
 	sigs.k8s.io/controller-tools v0.13.0

@@ -15,6 +15,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
@@ -42,8 +43,8 @@ const (
 )
 
 const (
-	annotationKeyCompositionResourceName = "crossplane.io/composition-resource-name"
-	annotationKeyReady                   = "meta.gotemplating.fn.crossplane.io/ready"
+	annotationKeyCompositionResourceName = "gotemplating.fn.crossplane.io/composition-resource-name"
+	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
@@ -129,7 +130,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		if cd.Resource.GetAPIVersion() == dxr.Resource.GetAPIVersion() && cd.Resource.GetKind() == dxr.Resource.GetKind() {
 			dst := make(map[string]any)
 			if err := dxr.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+				response.Fatal(rsp, errors.Wrap(err, "cannot get existing composite status"))
 				return rsp, nil
 			}
 
@@ -179,9 +180,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			cd.Ready = fn.Ready(v)
 
 			// remove meta annotation
-			ann := cd.Resource.GetAnnotations()
-			delete(ann, annotationKeyReady)
-			cd.Resource.SetAnnotations(ann)
+			meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
 		}
 
 		// Add resource to the desired composed resources map.
@@ -191,6 +190,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			return rsp, nil
 		}
 
+		// remove resource name annotation
+		meta.RemoveAnnotations(cd.Resource, annotationKeyCompositionResourceName)
+
 		dcd[name] = cd
 	}
 
@@ -198,7 +200,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	f.log.Debug("constructed desired composed resources", "desiredComposed:", dcd)
 
 	if err := response.SetDesiredComposedResources(rsp, dcd); err != nil {
-		response.Fatal(rsp, errors.Wrap(err, "cannot desired dsd composed resources"))
+		response.Fatal(rsp, errors.Wrap(err, "cannot desired composed resources"))
 		return rsp, nil
 	}
 
@@ -207,20 +209,20 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	response.Normalf(rsp, "I was run with cd source %q", in.Source)
+	response.Normalf(rsp, "Successful run with %q source", in.Source)
 
 	return rsp, nil
 }
 
-func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]interface{}, error) {
+func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]any, error) {
 	jReq, err := protojson.Marshal(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot marshal request from proto to json")
 	}
 
-	var mReq map[string]interface{}
+	var mReq map[string]any
 	if err := json.Unmarshal(jReq, &mReq); err != nil {
-		return nil, errors.Wrap(err, "cannot unmarshal json to map[string]interface{}")
+		return nil, errors.Wrap(err, "cannot unmarshal json to map[string]any")
 	}
 
 	return mReq, nil

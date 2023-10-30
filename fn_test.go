@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
-	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
+	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
+	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
-	cdWithReadyWrong      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd","meta.gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-cd"}}`
-	cdWithReadyTrue       = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd","meta.gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-cd"}}`
+	cdWithReadyWrong      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd","gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-cd"}}`
+	cdWithReadyTrue       = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd","gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-cd"}}`
 
 	metaResourceInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
 	metaResourceConDet  = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}` // encoded string "value"
@@ -210,7 +210,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -219,7 +219,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(cd),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd"}}`),
 							},
 						},
 					},
@@ -254,7 +254,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -263,7 +263,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
 						},
 					},
@@ -298,7 +298,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -337,7 +337,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.FileSystemSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.FileSystemSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -346,7 +346,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{"crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
 						},
 					},
@@ -447,7 +447,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -456,7 +456,7 @@ func TestRunFunction(t *testing.T) {
 						},
 						Resources: map[string]*fnv1beta1.Resource{
 							"cool-cd": {
-								Resource: resource.MustStructJSON(cd),
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd"}}`),
 								Ready:    1,
 							},
 						},
@@ -529,7 +529,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("I was run with cd source %q", v1beta1.InlineSource),
+							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
 						},
 					},
 					Desired: &fnv1beta1.State{

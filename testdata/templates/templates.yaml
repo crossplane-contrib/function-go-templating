@@ -3,6 +3,6 @@ kind: CD
 metadata:
   name: cool-cd
   annotations:
-    crossplane.io/composition-resource-name: cool-cd
+    gotemplating.fn.crossplane.io/composition-resource-name: cool-cd
   labels:
     belongsTo: {{ .observed.composite.resource.metadata.name|quote }}

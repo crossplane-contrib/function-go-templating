@@ -24,7 +24,7 @@ spec:
             kind: User
             metadata:
               annotations:
-                crossplane.io/composition-resource-name: test-user-{{ $i }}
+                gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
               name: test-user-{{ $i }}
               labels:
                 testing.upbound.io/example-name: test-user-{{ $i }}
@@ -40,7 +40,7 @@ spec:
             kind: AccessKey
             metadata:
               annotations:
-                  crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+                  gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
               name: sample-access-key-{{ $i }}
             spec:
               forProvider:
@@ -56,7 +56,7 @@ spec:
             kind: CompositeConnectionDetails
             metadata:
               annotations:
-                  crossplane.io/composition-resource-name: connection-details
+                  gotemplating.fn.crossplane.io/composition-resource-name: connection-details
               name: connection-details
             {{ if eq $.observed.resources nil }}
             data: {}
@@ -68,37 +68,3 @@ spec:
     - step: ready
       functionRef:
         name: function-auto-ready
-
----
-
-apiVersion: apiextensions.crossplane.io/v1
-kind: CompositeResourceDefinition
-metadata:
-  name: xusers.aws.platformref.upbound.io
-spec:
-  group: aws.platformref.upbound.io
-  names:
-    kind: XUser
-    plural: xusers
-  claimNames:
-    kind: MyUser
-    plural: myusers
-  versions:
-    - name: v1alpha1
-      served: true
-      referenceable: true
-      schema:
-        openAPIV3Schema:
-          type: object
-          properties:
-            spec:
-              type: object
-              properties:
-                id:
-                  type: string
-                  description: ID of this user that other objects will use to refer to it.
-                count:
-                  type: integer
-              required:
-                - id
-                - count
