@@ -2,5 +2,5 @@
 apiVersion: meta.pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
-  name: function-template-go
+  name: function-go-templating
 spec: {}

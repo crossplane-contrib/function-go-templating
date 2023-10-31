@@ -1,0 +1,37 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xusers.aws.platformref.upbound.io
+spec:
+  group: aws.platformref.upbound.io
+  names:
+    kind: XUser
+    plural: xusers
+  claimNames:
+    kind: MyUser
+    plural: myusers
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: ID of this user that other objects will use to refer to it.
+                count:
+                  type: integer
+              required:
+                - id
+                - count
+            status:
+              type: object
+              properties:
+                dummy:
+                  type: string
+                  description: Dummy status field.

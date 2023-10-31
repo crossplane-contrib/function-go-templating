@@ -1,0 +1,79 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xusers.aws.platformref.upbound.io
+spec:
+  writeConnectionSecretsToNamespace: crossplane-system
+  compositeTypeRef:
+    apiVersion: aws.platformref.upbound.io/v1alpha1
+    kind: XUser
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplate.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- range $i := until ( .observed.composite.resource.spec.count | int ) }}
+            ---
+            apiVersion: iam.aws.upbound.io/v1beta1
+            kind: User
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
+              name: test-user-{{ $i }}
+              labels:
+                testing.upbound.io/example-name: test-user-{{ $i }}
+              {{ if eq $.observed.resources nil }}
+                dummy: {{ randomChoice "foo" "bar" "baz" }}
+              {{ else }}
+                dummy: {{ ( index $.observed.resources ( print "test-user-" $i ) ).resource.metadata.labels.dummy }}
+              {{ end }}
+            spec:
+              forProvider: {}
+            ---
+            apiVersion: iam.aws.upbound.io/v1beta1
+            kind: AccessKey
+            metadata:
+              annotations:
+                  gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+              name: sample-access-key-{{ $i }}
+            spec:
+              forProvider:
+                userSelector:
+                  matchLabels:
+                    testing.upbound.io/example-name: test-user-{{ $i }}
+              writeConnectionSecretToRef:
+                name: sample-access-key-secret-{{ $i }}
+                namespace: crossplane-system
+            {{- end }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            metadata:
+              annotations:
+                  gotemplating.fn.crossplane.io/composition-resource-name: connection-details
+              name: connection-details
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            data:
+              username: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.username }}
+              password: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.password }}
+              url: {{ "http://www.example.com" | b64enc }}
+            {{ end }}
+            ---
+            apiVersion: aws.platformref.upbound.io/v1alpha1
+            kind: XUser
+            metadata:
+              annotations:
+                  gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.metadata.name }}
+            status:
+              dummy: cool-status
+    - step: ready
+      functionRef:
+        name: function-auto-ready

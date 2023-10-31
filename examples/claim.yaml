@@ -1,0 +1,8 @@
+apiVersion: aws.platformref.upbound.io/v1alpha1
+kind: MyUser
+metadata:
+  name: test-user
+  namespace: crossplane-system
+spec:
+  id: test-user
+  count: 2

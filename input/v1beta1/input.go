@@ -1,6 +1,6 @@
 // Package v1beta1 contains the input type for this Function
 // +kubebuilder:object:generate=true
-// +groupName=template.fn.crossplane.io
+// +groupName=gotemplating.fn.crossplane.io
 // +versionName=v1beta1
 package v1beta1
 
@@ -11,10 +11,7 @@ import (
 // This isn't a custom resource, in the sense that we never install its CRD.
 // It is a KRM-like object, so we generate a CRD to describe its schema.
 
-// TODO: Add your input type here! It doesn't need to be called 'Input', you can
-// rename it to anything you like.
-
-// Input can be used to provide input to this Function.
+// Input is used to provide templates to this Function.
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:resource:categories=crossplane
@@ -22,6 +19,28 @@ type Input struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Example is an example field. Replace it with whatever input you need. :)
-	Example string `json:"example"`
+	// Source specifies the different types of input sources that can be used with this function
+	Source InputSource `json:"source"`
+	// Inline is the inline form input of the templates
+	Inline *InputSourceInline `json:"inline,omitempty"`
+	// FileSystem is the folder path where the templates are located
+	FileSystem *InputSourceFileSystem `json:"fileSystem,omitempty"`
+}
+
+type InputSource string
+
+const (
+	// InlineSource indicates that function will get its input as inline
+	InlineSource InputSource = "Inline"
+
+	// FileSystemSource indicates that function will get its input from a folder
+	FileSystemSource InputSource = "FileSystem"
+)
+
+type InputSourceInline struct {
+	Template string `json:"template,omitempty"`
+}
+
+type InputSourceFileSystem struct {
+	DirPath string `json:"dirPath,omitempty"`
 }
