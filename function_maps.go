@@ -5,7 +5,7 @@ import (
 	"text/template"
 	"time"
 
-	sprig "github.com/go-task/slim-sprig"
+	sprig "github.com/Masterminds/sprig/v3"
 )
 
 var funcMaps = []template.FuncMap{

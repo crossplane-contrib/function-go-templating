@@ -64,7 +64,16 @@ spec:
             data:
               username: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.username }}
               password: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.password }}
+              url: {{ "http://www.example.com" | b64enc }}
             {{ end }}
+            ---
+            apiVersion: aws.platformref.upbound.io/v1alpha1
+            kind: XUser
+            metadata:
+              annotations:
+                  gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.metadata.name }}
+            status:
+              dummy: cool-status
     - step: ready
       functionRef:
         name: function-auto-ready

@@ -115,6 +115,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
+	// Get the observed composite resource from the request.
+	observedComposite, err := request.GetObservedCompositeResource(req)
+	if err != nil {
+		response.Fatal(rsp, errors.Wrap(err, "cannot get observed composite resource"))
+		return rsp, nil
+	}
+
 	//  Get the desired composed resources from the request.
 	desiredComposed, err := request.GetDesiredComposedResources(req)
 	if err != nil {
@@ -129,16 +136,16 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Update only the status of the desired composite resource.
-		if cd.Resource.GetAPIVersion() == desiredComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == desiredComposite.Resource.GetKind() {
+		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() {
 			dst := make(map[string]any)
 			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get existing composite status"))
+				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
 				return rsp, nil
 			}
 
 			src := make(map[string]any)
 			if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+				response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
 				return rsp, nil
 			}
 

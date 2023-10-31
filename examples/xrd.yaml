@@ -29,3 +29,9 @@ spec:
               required:
                 - id
                 - count
+            status:
+              type: object
+              properties:
+                dummy:
+                  type: string
+                  description: Dummy status field.
