@@ -13,7 +13,7 @@ spec:
       functionRef:
         name: function-go-templating
       input:
-        apiVersion: gotemplate.fn.crossplane.io/v1beta1
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
         kind: GoTemplate
         source: Inline
         inline:
