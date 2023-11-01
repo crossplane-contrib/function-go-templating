@@ -65,6 +65,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46t
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crossplane/crossplane-runtime v1.14.0-rc.1 h1:kyW6HY9IbvnKWT0x9CbbErIeE5g7o0akferrVWntSg8=
 github.com/crossplane/crossplane-runtime v1.14.0-rc.1/go.mod h1:aOP+5W2wKpvthVs3pFNbVOe1jwrKYbJho0ThGNCVz9o=
+github.com/crossplane/crossplane-runtime v1.14.0 h1:MFo93iOJLvYaMCaCoyH2vFWsHebdA1kv3QdOm7hcm5k=
+github.com/crossplane/crossplane-runtime v1.14.0/go.mod h1:aOP+5W2wKpvthVs3pFNbVOe1jwrKYbJho0ThGNCVz9o=
 github.com/crossplane/function-sdk-go v0.0.0-20231025230156-142a5c0bc9cc h1:joVogW0FRLjh6Ydwb6afc63yb5VTr5SA0lHvzIxy5LU=
 github.com/crossplane/function-sdk-go v0.0.0-20231025230156-142a5c0bc9cc/go.mod h1:v3yZsfPbDOG+FLC689u9aVMDs58mmh52ZKIfQg7toOk=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

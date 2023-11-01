@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/alecthomas/kong v0.8.1
-	github.com/crossplane/crossplane-runtime v1.14.0-rc.1
+	github.com/crossplane/crossplane-runtime v1.14.0
 	github.com/crossplane/function-sdk-go v0.0.0-20231025230156-142a5c0bc9cc
 	github.com/google/go-cmp v0.6.0
 	google.golang.org/protobuf v1.31.0
