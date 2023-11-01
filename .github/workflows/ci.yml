@@ -152,10 +152,12 @@ jobs:
           password: ${{ secrets.XPKG_TOKEN }}
 
       # If a version wasn't explicitly passed as a workflow_dispatch input we
-      # default to version v0.0.0-shortsha, for example v0.0.0-8ed5691.
+      # default to version v0.0.0-<git-commit-date>-<git-short-sha>, for example
+      # v0.0.0-20231101115142-1091066df799. This is a simple implementation of
+      # Go's pseudo-versions: https://go.dev/ref/mod#pseudo-versions.
       - name: Set Default Multi-Platform Package Version
         if: env.XPKG_VERSION == ''
-        run: echo "XPKG_VERSION=v0.0.0-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "XPKG_VERSION=v0.0.0-$(date -d@$(git show -s --format=%ct) +%Y%m%d%H%M%S)-$(git rev-parse --short=12 HEAD)" >> $GITHUB_ENV
 
       - name: Push Multi-Platform Package to Upbound
         if: env.XPKG_ACCESS_ID != ''
