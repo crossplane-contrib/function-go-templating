@@ -1,0 +1,47 @@
+{{- range $i := until ( .observed.composite.resource.spec.count | int ) }}
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: User
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
+  labels:
+    testing.upbound.io/example-name: test-user-{{ $i }}
+  {{ if eq $.observed.resources nil }}
+    dummy: {{ randomChoice "foo" "bar" "baz" }}
+  {{ else }}
+    dummy: {{ ( index $.observed.resources ( print "test-user-" $i ) ).resource.metadata.labels.dummy }}
+  {{ end }}
+spec:
+  forProvider: {}
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: AccessKey
+metadata:
+  annotations:
+      gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+spec:
+  forProvider:
+    userSelector:
+      matchLabels:
+        testing.upbound.io/example-name: test-user-{{ $i }}
+  writeConnectionSecretToRef:
+    name: sample-access-key-secret-{{ $i }}
+    namespace: crossplane-system
+{{- end }}
+---
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: CompositeConnectionDetails
+{{ if eq $.observed.resources nil }}
+data: {}
+{{ else }}
+data:
+  username: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.username }}
+  password: {{ ( index $.observed.resources "sample-access-key-0" ).connectionDetails.password }}
+  url: {{ "http://www.example.com" | b64enc }}
+{{ end }}
+---
+apiVersion: aws.platformref.upbound.io/v1alpha1
+kind: XUser
+status:
+  dummy: cool-status
