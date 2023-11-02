@@ -3,45 +3,34 @@ package main
 import (
 	"bytes"
 	"context"
-	"dario.cat/mergo"
 	"encoding/base64"
-	"fmt"
 	"io"
 
+	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
+	"github.com/crossplane/function-sdk-go/errors"
+	"github.com/crossplane/function-sdk-go/logging"
 	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
-	fn "github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
-// Function returns whatever response you ask it to.
+// Function uses Go templates to compose resources.
 type Function struct {
 	fnv1beta1.UnimplementedFunctionRunnerServiceServer
 
 	log logging.Logger
 }
-
-const (
-	errFmtInvalidFunction   = "invalid function input: %s"
-	errFmtInvalidReadyValue = "%s is invalid, ready annotation must be True, Unspecified, or False"
-	errFmtInvalidMetaType   = "invalid meta kind %s"
-
-	errCannotGet   = "cannot get the function input"
-	errCannotParse = "cannot parse the provided templates"
-)
 
 const (
 	annotationKeyCompositionResourceName = "gotemplating.fn.crossplane.io/composition-resource-name"
@@ -64,13 +53,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 	tg, err := NewTemplateSourceGetter(in)
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(errFmtInvalidFunction, errCannotGet)))
+		response.Fatal(rsp, errors.Wrap(err, "invalid function input"))
 		return rsp, nil
 	}
 
 	tmpl, err := GetNewTemplateWithFunctionMaps().Parse(tg.GetTemplates())
 	if err != nil {
-		response.Fatal(rsp, errors.Wrap(err, fmt.Sprintf(errFmtInvalidFunction, errCannotParse)))
+		response.Fatal(rsp, errors.Wrap(err, "invalid function input: cannot parse the provided templates"))
 		return rsp, nil
 	}
 
@@ -173,7 +162,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					desiredComposite.ConnectionDetails[k] = d
 				}
 			default:
-				response.Fatal(rsp, fmt.Errorf(errFmtInvalidMetaType, obj.GetKind()))
+				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails", obj.GetKind(), metaApiVersion))
 				return rsp, nil
 			}
 
@@ -184,11 +173,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		// Set ready state.
 		if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
 			if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
-				response.Fatal(rsp, fmt.Errorf(fmt.Sprintf(errFmtInvalidFunction, errFmtInvalidReadyValue), v))
+				response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
 				return rsp, nil
 			}
 
-			cd.Ready = fn.Ready(v)
+			cd.Ready = resource.Ready(v)
 
 			// Remove meta annotation.
 			meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
@@ -200,7 +189,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		// Add resource to the desired composed resources map.
 		name, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]
 		if !found {
-			response.Fatal(rsp, errors.Errorf("cannot get composition resource name of %s", obj.GetName()))
+			response.Fatal(rsp, errors.Errorf("%q template is missing required %q annotation", obj.GetKind(), annotationKeyCompositionResourceName))
 			return rsp, nil
 		}
 
@@ -220,7 +209,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	response.Normalf(rsp, "Successful run with %q source", in.Source)
+	f.log.Info("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil
 }

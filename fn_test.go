@@ -71,7 +71,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: invalid input source: wrong",
+							Message:  "invalid function input: invalid source: wrong",
 						},
 					},
 				},
@@ -88,7 +88,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: invalid input source: ",
+							Message:  "invalid function input: source is required",
 						},
 					},
 				},
@@ -111,7 +111,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "cannot get composition resource name of cool-cd",
+							Message:  "\"CD\" template is missing required \"" + annotationKeyCompositionResourceName + "\" annotation",
 						},
 					},
 				},
@@ -209,12 +209,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Tag: "nochange", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xr),
@@ -253,12 +247,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xr),
@@ -297,12 +285,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xrWithStatus),
@@ -336,12 +318,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar","baz":"qux"}}}`),
@@ -375,12 +351,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.FileSystemSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xr),
@@ -412,7 +382,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
+							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
 						},
 					},
 				},
@@ -445,7 +415,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(errFmtInvalidFunction, fmt.Sprintf(errFmtInvalidReadyValue, "wrongValue")),
+							Message:  "invalid function input: invalid \"" + annotationKeyReady + "\" annotation value \"wrongValue\": must be True, False, or Unspecified",
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -485,12 +455,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource: resource.MustStructJSON(xr),
@@ -532,7 +496,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(errFmtInvalidMetaType, "InvalidMeta"),
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails",
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -567,12 +531,6 @@ func TestRunFunction(t *testing.T) {
 			want: want{
 				rsp: &fnv1beta1.RunFunctionResponse{
 					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
-						{
-							Severity: fnv1beta1.Severity_SEVERITY_NORMAL,
-							Message:  fmt.Sprintf("Successful run with %q source", v1beta1.InlineSource),
-						},
-					},
 					Desired: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
 							Resource:          resource.MustStructJSON(xr),
