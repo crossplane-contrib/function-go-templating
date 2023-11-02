@@ -209,7 +209,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	response.Normalf(rsp, "Successful run with %q source", in.Source)
+	f.log.Info("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil
 }
