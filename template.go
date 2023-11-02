@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/function-sdk-go/errors"
 
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
@@ -24,8 +24,10 @@ func NewTemplateSourceGetter(in *v1beta1.Input) (TemplateGetter, error) {
 		return newInlineSource(in)
 	case v1beta1.FileSystemSource:
 		return newFileSource(in)
+	case "":
+		return nil, errors.Errorf("source is required")
 	default:
-		return nil, errors.Errorf("invalid input source: %s", in.Source)
+		return nil, errors.Errorf("invalid source: %s", in.Source)
 	}
 }
 

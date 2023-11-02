@@ -71,7 +71,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: invalid input source: wrong",
+							Message:  "invalid function input: invalid source: wrong",
 						},
 					},
 				},
@@ -88,7 +88,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: invalid input source: ",
+							Message:  "invalid function input: source is required",
 						},
 					},
 				},
@@ -111,7 +111,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "cannot get composition resource name of cool-cd",
+							Message:  "\"CD\" template is missing required \"" + annotationKeyCompositionResourceName + "\" annotation",
 						},
 					},
 				},
@@ -412,7 +412,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot get the function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
+							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
 						},
 					},
 				},
@@ -445,7 +445,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(errFmtInvalidFunction, fmt.Sprintf(errFmtInvalidReadyValue, "wrongValue")),
+							Message:  "invalid function input: invalid \"" + annotationKeyReady + "\" annotation value \"wrongValue\": must be True, False, or Unspecified",
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -532,7 +532,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  fmt.Sprintf(errFmtInvalidMetaType, "InvalidMeta"),
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails",
 						},
 					},
 					Desired: &fnv1beta1.State{
