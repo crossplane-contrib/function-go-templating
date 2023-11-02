@@ -1,12 +1,11 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: xusers.aws.platformref.upbound.io
+  name: example-inline
 spec:
-  writeConnectionSecretsToNamespace: crossplane-system
   compositeTypeRef:
-    apiVersion: aws.platformref.upbound.io/v1alpha1
-    kind: XUser
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
   mode: Pipeline
   pipeline:
     - step: render-templates
@@ -25,7 +24,6 @@ spec:
             metadata:
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
-              name: test-user-{{ $i }}
               labels:
                 testing.upbound.io/example-name: test-user-{{ $i }}
               {{ if eq $.observed.resources nil }}
@@ -41,7 +39,6 @@ spec:
             metadata:
               annotations:
                   gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
-              name: sample-access-key-{{ $i }}
             spec:
               forProvider:
                 userSelector:
@@ -54,10 +51,6 @@ spec:
             ---
             apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
             kind: CompositeConnectionDetails
-            metadata:
-              annotations:
-                  gotemplating.fn.crossplane.io/composition-resource-name: connection-details
-              name: connection-details
             {{ if eq $.observed.resources nil }}
             data: {}
             {{ else }}
@@ -67,13 +60,7 @@ spec:
               url: {{ "http://www.example.com" | b64enc }}
             {{ end }}
             ---
-            apiVersion: aws.platformref.upbound.io/v1alpha1
-            kind: XUser
-            metadata:
-              annotations:
-                  gotemplating.fn.crossplane.io/composition-resource-name: {{ .observed.composite.resource.metadata.name }}
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
             status:
               dummy: cool-status
-    - step: ready
-      functionRef:
-        name: function-auto-ready
