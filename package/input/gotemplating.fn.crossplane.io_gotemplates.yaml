@@ -4,22 +4,22 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.13.0
-  name: inputs.gotemplating.fn.crossplane.io
+  name: gotemplates.gotemplating.fn.crossplane.io
 spec:
   group: gotemplating.fn.crossplane.io
   names:
     categories:
     - crossplane
-    kind: Input
-    listKind: InputList
-    plural: inputs
-    singular: input
+    kind: GoTemplate
+    listKind: GoTemplateList
+    plural: gotemplates
+    singular: gotemplate
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Input is used to provide templates to this Function.
+        description: A GoTemplate is used to provide templates to this Function.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
