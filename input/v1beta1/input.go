@@ -20,9 +20,13 @@ type GoTemplate struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Template start characters
-	LeftDelims string `json:"leftDelims,omitempty"`
+	// +kubebuilder:default:="{{"
+	// +optional
+	LeftDelims *string `json:"leftDelims,omitempty"`
 	// Template end characters
-	RightDelims string `json:"rightDelims,omitempty"`
+	// +kubebuilder:default:="}}"
+	// +optional
+	RightDelims *string `json:"rightDelims,omitempty"`
 	// Source specifies the different types of input sources that can be used with this function
 	Source TemplateSource `json:"source"`
 	// Inline is the inline form input of the templates

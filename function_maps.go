@@ -13,6 +13,11 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 )
 
+var (
+	defaultLeftDelims  = "{{"
+	defaultRightDelims = "}}"
+)
+
 var funcMaps = []template.FuncMap{
 	{
 		"randomChoice": func(choices ...string) string {
@@ -49,13 +54,13 @@ var funcMaps = []template.FuncMap{
 }
 
 func GetNewTemplateWithFunctionMaps(in *v1beta1.GoTemplate) *template.Template {
-	if in.LeftDelims == "" {
-		in.LeftDelims = "{{"
+	if in.LeftDelims == nil {
+		in.LeftDelims = &defaultLeftDelims
 	}
-	if in.RightDelims == "" {
-		in.RightDelims = "}}"
+	if in.RightDelims == nil {
+		in.RightDelims = &defaultRightDelims
 	}
-	tpl := template.New("manifests").Delims(in.LeftDelims, in.RightDelims)
+	tpl := template.New("manifests").Delims(*in.LeftDelims, *in.RightDelims)
 
 	for _, f := range funcMaps {
 		tpl.Funcs(f)

@@ -13,6 +13,16 @@ func (in *GoTemplate) DeepCopyInto(out *GoTemplate) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.LeftDelims != nil {
+		in, out := &in.LeftDelims, &out.LeftDelims
+		*out = new(string)
+		**out = **in
+	}
+	if in.RightDelims != nil {
+		in, out := &in.RightDelims, &out.RightDelims
+		*out = new(string)
+		**out = **in
+	}
 	if in.Inline != nil {
 		in, out := &in.Inline, &out.Inline
 		*out = new(TemplateSourceInline)

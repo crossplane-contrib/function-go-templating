@@ -44,11 +44,13 @@ spec:
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           leftDelims:
+            default: '{{'
             description: Template start characters
             type: string
           metadata:
             type: object
           rightDelims:
+            default: '}}'
             description: Template end characters
             type: string
           source:
