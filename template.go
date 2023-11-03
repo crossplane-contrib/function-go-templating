@@ -18,7 +18,7 @@ type TemplateGetter interface {
 }
 
 // NewTemplateSourceGetter returns a TemplateGetter based on the cd source
-func NewTemplateSourceGetter(in *v1beta1.Input) (TemplateGetter, error) {
+func NewTemplateSourceGetter(in *v1beta1.GoTemplate) (TemplateGetter, error) {
 	switch in.Source {
 	case v1beta1.InlineSource:
 		return newInlineSource(in)
@@ -47,7 +47,7 @@ func (is *InlineSource) GetTemplates() string {
 	return is.Template
 }
 
-func newInlineSource(in *v1beta1.Input) (*InlineSource, error) {
+func newInlineSource(in *v1beta1.GoTemplate) (*InlineSource, error) {
 	return &InlineSource{
 		Template: in.Inline.Template,
 	}, nil
@@ -58,7 +58,7 @@ func (fs *FileSource) GetTemplates() string {
 	return fs.Template
 }
 
-func newFileSource(in *v1beta1.Input) (*FileSource, error) {
+func newFileSource(in *v1beta1.GoTemplate) (*FileSource, error) {
 	d := in.FileSystem.DirPath
 
 	tmpl, err := readTemplates(d)
