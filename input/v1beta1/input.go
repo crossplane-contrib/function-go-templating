@@ -11,36 +11,36 @@ import (
 // This isn't a custom resource, in the sense that we never install its CRD.
 // It is a KRM-like object, so we generate a CRD to describe its schema.
 
-// Input is used to provide templates to this Function.
+// A GoTemplate is used to provide templates to this Function.
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:resource:categories=crossplane
-type Input struct {
+type GoTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Source specifies the different types of input sources that can be used with this function
-	Source InputSource `json:"source"`
+	Source TemplateSource `json:"source"`
 	// Inline is the inline form input of the templates
-	Inline *InputSourceInline `json:"inline,omitempty"`
+	Inline *TemplateSourceInline `json:"inline,omitempty"`
 	// FileSystem is the folder path where the templates are located
-	FileSystem *InputSourceFileSystem `json:"fileSystem,omitempty"`
+	FileSystem *TemplateSourceFileSystem `json:"fileSystem,omitempty"`
 }
 
-type InputSource string
+type TemplateSource string
 
 const (
 	// InlineSource indicates that function will get its input as inline
-	InlineSource InputSource = "Inline"
+	InlineSource TemplateSource = "Inline"
 
 	// FileSystemSource indicates that function will get its input from a folder
-	FileSystemSource InputSource = "FileSystem"
+	FileSystemSource TemplateSource = "FileSystem"
 )
 
-type InputSourceInline struct {
+type TemplateSourceInline struct {
 	Template string `json:"template,omitempty"`
 }
 
-type InputSourceFileSystem struct {
+type TemplateSourceFileSystem struct {
 	DirPath string `json:"dirPath,omitempty"`
 }
