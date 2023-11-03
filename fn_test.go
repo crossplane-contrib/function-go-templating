@@ -60,7 +60,7 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: "wrong",
 						}),
 				},
@@ -99,9 +99,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdMissingResourceName},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingResourceName},
 						}),
 				},
 			},
@@ -122,9 +122,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdMissingKind},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingKind},
 						}),
 				},
 			},
@@ -145,9 +145,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdWrongTmpl},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdWrongTmpl},
 						},
 					),
 					Observed: &fnv1beta1.State{
@@ -185,9 +185,9 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "nochange"},
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cd},
+							Inline: &v1beta1.TemplateSourceInline{Template: cd},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -228,9 +228,9 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdTmpl},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -266,9 +266,9 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: xrWithStatus},
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithStatus},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -299,9 +299,9 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: xrWithNestedStatusBaz},
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithNestedStatusBaz},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -332,9 +332,9 @@ func TestRunFunction(t *testing.T) {
 				req: &fnv1beta1.RunFunctionRequest{
 					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source:     v1beta1.FileSystemSource,
-							FileSystem: &v1beta1.InputSourceFileSystem{DirPath: path},
+							FileSystem: &v1beta1.TemplateSourceFileSystem{DirPath: path},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -369,9 +369,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source:     v1beta1.FileSystemSource,
-							FileSystem: &v1beta1.InputSourceFileSystem{DirPath: wrongPath},
+							FileSystem: &v1beta1.TemplateSourceFileSystem{DirPath: wrongPath},
 						},
 					),
 				},
@@ -393,9 +393,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdWithReadyWrong},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdWithReadyWrong},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -431,9 +431,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: cdWithReadyTrue},
+							Inline: &v1beta1.TemplateSourceInline{Template: cdWithReadyTrue},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -474,9 +474,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: metaResourceInvalid},
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceInvalid},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
@@ -512,9 +512,9 @@ func TestRunFunction(t *testing.T) {
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
-						&v1beta1.Input{
+						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
-							Inline: &v1beta1.InputSourceInline{Template: metaResourceConDet},
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDet},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{
