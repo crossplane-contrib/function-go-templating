@@ -3,4 +3,16 @@ apiVersion: meta.pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   name: function-go-templating
+  annotations:
+    meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
+    meta.crossplane.io/source: github.com/crossplane-contrib/function-go-templating
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: A Go templating composition function
+    meta.crossplane.io/readme: |
+      This composition function allows you to compose Crossplane resources using
+      [Go templates](https://pkg.go.dev/text/template). If you've written a
+      [Helm chart](https://helm.sh) before, using this function will be a
+      familiar experience. See the
+      [README](https://github.com/crossplane-contrib/function-go-templating)
+      for examples and documentation.
 spec: {}
