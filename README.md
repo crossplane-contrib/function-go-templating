@@ -103,7 +103,7 @@ about `crossplane beta render`.
 | -------------- | --------------------------------------- |
 | `randomChoice` | Randomly selects one of a given strings |
 | `toYaml`       | Marshals any object into a YAML string  |
-| `fromYaml'     | Unmarshals a YAML string into an object |
+| `fromYaml``     | Unmarshals a YAML string into an object |
 
 ## Developing this function
 
