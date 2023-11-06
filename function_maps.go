@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gopkg.in/yaml.v3"
 	"math/rand"
 	"text/template"
 	"time"
@@ -14,6 +15,20 @@ var funcMaps = []template.FuncMap{
 			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 			return choices[r.Intn(len(choices))]
+		},
+
+		"toYaml": func(val any) (string, error) {
+			res, err := yaml.Marshal(val)
+			if err != nil {
+				return "", err
+			}
+			return string(res), nil
+		},
+
+		"fromYaml": func(val string) (any, error) {
+			var res any
+			err := yaml.Unmarshal([]byte(val), &res)
+			return res, err
 		},
 	},
 }

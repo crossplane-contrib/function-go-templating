@@ -40,7 +40,6 @@ spec:
       name: function-auto-ready
 ```
 
-
 ## Using this function
 
 This function can load templates from two sources: `Inline` and `FileSystem`.
@@ -63,7 +62,7 @@ pipeline context using notation like:
 This function supports all of Go's [built-in template functions][builtin]. The
 above examples use the `index` function to access keys like `resource-name` that
 contain periods, hyphens and other special characters. Like Helm, this function
-also supports [Sprig template functions][sprig].
+also supports [Sprig template functions][sprig] as well as [additional functions](#additional-functions).
 
 To return desired composite resource connection details, include a template that
 produces the special `CompositeConnectionDetails` resource:
@@ -97,6 +96,14 @@ $ crossplane beta render xr.yaml composition.yaml functions.yaml
 
 See the [composition functions documentation][docs-functions] to learn more
 about `crossplane beta render`.
+
+## Additional functions
+
+| Name           | Description                             |
+| -------------- | --------------------------------------- |
+| `randomChoice` | Randomly selects one of a given strings |
+| `toYaml`       | Marshals any object into a YAML string  |
+| `fromYaml'     | Unmarshals a YAML string into an object |
 
 ## Developing this function
 
