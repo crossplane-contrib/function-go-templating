@@ -48,6 +48,10 @@ func (is *InlineSource) GetTemplates() string {
 }
 
 func newInlineSource(in *v1beta1.GoTemplate) (*InlineSource, error) {
+	if in.Inline == nil || in.Inline.Template == "" {
+		return nil, errors.New("inline.template should be provided")
+	}
+
 	return &InlineSource{
 		Template: in.Inline.Template,
 	}, nil
@@ -59,6 +63,10 @@ func (fs *FileSource) GetTemplates() string {
 }
 
 func newFileSource(in *v1beta1.GoTemplate) (*FileSource, error) {
+	if in.FileSystem == nil || in.FileSystem.DirPath == "" {
+		return nil, errors.New("fileSystem.dirPath should be provided")
+	}
+
 	d := in.FileSystem.DirPath
 
 	tmpl, err := readTemplates(d)

@@ -94,6 +94,49 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"WrongInlineInput": {
+			reason: "The Function should return a fatal result if there is no inline template provided",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+						}),
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: inline.template should be provided",
+						},
+					},
+				},
+			},
+		},
+		"WrongFileSystemInput": {
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.FileSystemSource,
+						}),
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: fileSystem.dirPath should be provided",
+						},
+					},
+				},
+			},
+		},
 		"NoResourceNameAnnotation": {
 			reason: "The Function should return a fatal result if the cd does not have a composition-resource-name annotation",
 			args: args{
