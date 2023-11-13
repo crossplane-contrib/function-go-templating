@@ -14,8 +14,10 @@ spec:
       input:
         apiVersion: gotemplating.fn.crossplane.io/v1beta1
         kind: GoTemplate
-        leftDelims: '[['
-        rightDelims: ']]'
+        config:
+          delims:
+            left: '[['
+            right: ']]'
         source: Inline
         inline:
           template: |

@@ -26,6 +26,22 @@ spec:
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
+          config:
+            description: Go Template Config
+            properties:
+              delims:
+                description: Template delimiters
+                properties:
+                  left:
+                    default: '{{'
+                    description: Template start characters
+                    type: string
+                  right:
+                    default: '}}'
+                    description: Template end characters
+                    type: string
+                type: object
+            type: object
           fileSystem:
             description: FileSystem is the folder path where the templates are located
             properties:
@@ -43,16 +59,8 @@ spec:
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
-          leftDelims:
-            default: '{{'
-            description: Template start characters
-            type: string
           metadata:
             type: object
-          rightDelims:
-            default: '}}'
-            description: Template end characters
-            type: string
           source:
             description: Source specifies the different types of input sources that
               can be used with this function
