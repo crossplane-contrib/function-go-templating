@@ -1,9 +1,10 @@
 # function-go-templating
+
 [![CI](https://github.com/crossplane-contrib/function-go-templating/actions/workflows/ci.yml/badge.svg)](https://github.com/crossplane-contrib/function-go-templating/actions/workflows/ci.yml) ![GitHub release (latest SemVer)](https://img.shields.io/github/release/crossplane-contrib/function-go-templating)
 
 This [composition function][docs-functions] allows you to compose Crossplane
 resources using [Go templates][go-templates]. If you've written a [Helm
-chart][helm-chart] before, using this function will be a familiar experience. 
+chart][helm-chart] before, using this function will be a familiar experience.
 
 Here's an example:
 
@@ -18,26 +19,26 @@ spec:
     kind: XR
   mode: Pipeline
   pipeline:
-  - step: create-a-bucket
-    functionRef:
-      name: function-go-templating
-    input:
-      apiVersion: gotemplating.fn.crossplane.io/v1beta1
-      kind: GoTemplate
-      source: Inline
-      inline:
-        template: |
-          apiVersion: s3.aws.upbound.io/v1beta1
-          kind: Bucket
-          metadata:
-            annotations:
-              gotemplating.fn.crossplane.io/composition-resource-name: bucket
-          spec:
-            forProvider:
-              region: {{ .observed.composite.resource.spec.region }}
-  - step: automatically-detect-ready-composed-resources
-    functionRef:
-      name: function-auto-ready
+    - step: create-a-bucket
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: s3.aws.upbound.io/v1beta1
+            kind: Bucket
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: bucket
+            spec:
+              forProvider:
+                region: {{ .observed.composite.resource.spec.region }}
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: function-auto-ready
 ```
 
 ## Using this function
@@ -54,10 +55,10 @@ The templates are passed a [`RunFunctionRequest`][bsr] as data. This means that
 you can access the composite resource, any composed resources, and the function
 pipeline context using notation like:
 
-* `{{ .observed.composite.resource.metadata.name }}`
-* `{{ .desired.composite.resource.status.widgets }}`
-* `{{ (index .desired.composed "resource-name").resource.spec.widgets }}`
-* `{{ index .context "apiextensions.crossplane.io/environment" }}`
+- `{{ .observed.composite.resource.metadata.name }}`
+- `{{ .desired.composite.resource.status.widgets }}`
+- `{{ (index .desired.composed.resource "resource-name").spec.widgets }}`
+- `{{ index .context "apiextensions.crossplane.io/environment" }}`
 
 This function supports all of Go's [built-in template functions][builtin]. The
 above examples use the `index` function to access keys like `resource-name` that
@@ -99,11 +100,11 @@ about `crossplane beta render`.
 
 ## Additional functions
 
-| Name           | Description                             |
-| -------------- | --------------------------------------- |
-| `randomChoice` | Randomly selects one of a given strings |
-| `toYaml`       | Marshals any object into a YAML string  |
-| `fromYaml``     | Unmarshals a YAML string into an object |
+| Name                                              | Description                             |
+| ------------------------------------------------- | --------------------------------------- |
+| [`randomChoice``](example/functions/randomChoice) | Randomly selects one of a given strings |
+| [`toYaml`](example/functions/toYaml)              | Marshals any object into a YAML string  |
+| [`fromYaml`](example/functions/fromYaml)          | Unmarshals a YAML string into an object |
 
 ## Developing this function
 
