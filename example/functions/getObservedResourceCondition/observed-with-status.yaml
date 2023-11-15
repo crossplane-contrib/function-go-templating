@@ -1,0 +1,21 @@
+apiVersion: identity.openstack.upbound.io/v1alpha1
+kind: ProjectV3
+metadata:
+  annotations:
+    crossplane.io/composition-resource-name: project
+  labels:
+    crossplane.io/composite: myproject
+  name: myproject
+spec:
+  forProvider:
+    name: myproject
+  providerConfigRef:
+    name: myprovider
+status:
+  atProvider:
+    id: abcdef
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: "foo"
+      lastTransitionTime: "2023-11-03T09:07:31Z"
