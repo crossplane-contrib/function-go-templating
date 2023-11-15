@@ -57,7 +57,7 @@ pipeline context using notation like:
 
 - `{{ .observed.composite.resource.metadata.name }}`
 - `{{ .desired.composite.resource.status.widgets }}`
-- `{{ (index .desired.composed.resource "resource-name").spec.widgets }}`
+- `{{ (index .desired.composed "resource-name").resource.spec.widgets }}`
 - `{{ index .context "apiextensions.crossplane.io/environment" }}`
 
 This function supports all of Go's [built-in template functions][builtin]. The
