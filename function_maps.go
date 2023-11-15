@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"text/template"
 	"time"
@@ -44,6 +45,10 @@ var funcMaps = []template.FuncMap{
 			// Return either found condition or empty one with "Unknown" status
 			cond := conditioned.GetCondition(xpv1.ConditionType(ct))
 			return cond, nil
+		},
+
+		"setResourceNameAnnotation": func(name string) string {
+			return fmt.Sprintf("gotemplating.fn.crossplane.io/composition-resource-name: %s", name)
 		},
 	},
 }

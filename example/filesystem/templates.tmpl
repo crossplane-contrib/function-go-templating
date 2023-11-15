@@ -19,7 +19,7 @@ apiVersion: iam.aws.upbound.io/v1beta1
 kind: AccessKey
 metadata:
   annotations:
-      gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+    gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
 spec:
   forProvider:
     userSelector:

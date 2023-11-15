@@ -23,7 +23,7 @@ spec:
             kind: User
             metadata:
               annotations:
-                gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
+                {{ setResourceNameAnnotation (print "test-user-" $i) }}
               labels:
                 testing.upbound.io/example-name: test-user-{{ $i }}
               {{ if eq $.observed.resources nil }}
@@ -38,7 +38,7 @@ spec:
             kind: AccessKey
             metadata:
               annotations:
-                  gotemplating.fn.crossplane.io/composition-resource-name: sample-access-key-{{ $i }}
+                {{ setResourceNameAnnotation (print "sample-access-key-" $i) }}
             spec:
               forProvider:
                 userSelector:
