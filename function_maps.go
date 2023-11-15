@@ -51,9 +51,11 @@ var funcMaps = []template.FuncMap{
 func GetNewTemplateWithFunctionMaps(cfg *v1beta1.Config) *template.Template {
 	tpl := template.New("manifests")
 
-	if cfg.Delims != nil {
-		if cfg.Delims.Left != nil && cfg.Delims.Right != nil {
-			tpl = tpl.Delims(*cfg.Delims.Left, *cfg.Delims.Right)
+	if cfg != nil {
+		if cfg.Delims != nil {
+			if cfg.Delims.Left != nil && cfg.Delims.Right != nil {
+				tpl = tpl.Delims(*cfg.Delims.Left, *cfg.Delims.Right)
+			}
 		}
 	}
 
