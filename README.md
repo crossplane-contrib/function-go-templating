@@ -105,7 +105,7 @@ about `crossplane beta render`.
 | [`randomChoice`](example/functions/randomChoice)                                 | Randomly selects one of a given strings                      |
 | [`toYaml`](example/functions/toYaml)                                             | Marshals any object into a YAML string                       |
 | [`fromYaml`](example/functions/fromYaml)                                         | Unmarshals a YAML string into an object                      |
-| [`getObservedResourceCondition`](example/functions/getObservedResourceCondition) | Helper function to retreive conditions of observed resources |
+| [`getObservedResourceCondition`](example/functions/getObservedResourceCondition) | Helper function to retrieve conditions of observed resources |
 
 ## Developing this function
 
