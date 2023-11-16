@@ -41,3 +41,7 @@ spec:
               # Alternative syntax using pipelines
               pipeline:
                 {{ .observed.resources.project | getResourceCondition "Ready" | toYaml | nindent 4 }}
+
+              # Non object
+              nonResource:
+                {{ .observed.whatever | getResourceCondition "Ready" | toYaml | nindent 4 }}
