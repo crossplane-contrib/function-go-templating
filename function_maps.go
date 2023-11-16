@@ -7,15 +7,12 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	k8sv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	sprig "github.com/Masterminds/sprig/v3"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/function-sdk-go/errors"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
-	"github.com/crossplane/function-sdk-go/request"
-	"github.com/crossplane/function-sdk-go/resource"
 )
 
 var funcMaps = []template.FuncMap{
@@ -40,34 +37,36 @@ var funcMaps = []template.FuncMap{
 			return res, err
 		},
 
-		"getObservedResourceCondition": func(req map[string]any, resName string, condName string) (*xpv1.Condition, error) {
+		"getResourceCondition": func(ct string, res map[string]any) (*xpv1.Condition, error) {
+			resource, ok := res["resource"]
+			if !ok {
+				return nil, errors.New("input is not a resource")
+			}
+
+			status, ok := resource.(map[string]any)["status"]
+			if !ok {
+				// Just return a unknown condition for resources that do not have a status (yet)
+				return &xpv1.Condition{
+					Type:   xpv1.ConditionType(ct),
+					Status: v1.ConditionUnknown,
+				}, nil
+			}
+
 			// Convert map to JSON string
-			reqJson, err := json.Marshal(req)
+			reqJson, err := json.Marshal(status)
 			if err != nil {
 				return nil, errors.Wrap(err, "cannot marshal into json")
 			}
 
 			// Unmarshal JSON string into struct
-			var rfr *fnv1beta1.RunFunctionRequest
-			err = json.Unmarshal(reqJson, &rfr)
+			var conditioned xpv1.ConditionedStatus
+			err = json.Unmarshal(reqJson, &conditioned)
 			if err != nil {
-				return nil, errors.Wrap(err, "cannot unmarshal into RunFunctionRequest")
-			}
-
-			// Get observed composed resources, if any
-			ocr, err := request.GetObservedComposedResources(rfr)
-			if err != nil {
-				return &xpv1.Condition{Status: k8sv1.ConditionUnknown, Type: xpv1.ConditionType(condName)}, nil
-			}
-
-			// Find searched resource
-			res, ok := ocr[resource.Name(resName)]
-			if !ok {
-				return &xpv1.Condition{Status: k8sv1.ConditionUnknown, Type: xpv1.ConditionType(condName)}, nil
+				return nil, errors.Wrap(err, "cannot unmarshal into ConditionedStatus")
 			}
 
 			// Return either found condition or empty one with "Unknown" status
-			cond := res.Resource.GetCondition(xpv1.ConditionType(condName))
+			cond := conditioned.GetCondition(xpv1.ConditionType(ct))
 			return &cond, nil
 		},
 	},

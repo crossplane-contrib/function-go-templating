@@ -21,9 +21,23 @@ spec:
             apiVersion: {{ .observed.composite.resource.apiVersion }}
             kind: {{ .observed.composite.resource.kind }}
             status:
-              # Only add status fields from composed resource when when said resource exists and is ready
-              {{ if eq (getObservedResourceCondition . "project" "Ready").Status "True" }}
+              # Retreive condition of XR
+              compositeCondition:
+                {{ getResourceCondition "Ready" .observed.composite | toYaml | nindent 4 }}
+
+              # Retreive non existing condition of a resource just returns an Unknown condition
+              compositeConditionNotFound:
+                {{ getResourceCondition "Other" .observed.composite | toYaml | nindent 4 }}
+
+              # You can also retreive conditions of composed resources the same way
+              composedCondition:
+                {{ getResourceCondition "Ready" .observed.resources.project  | toYaml | nindent 4 }}
+
+              # Use a getResourceCondition to render conditional blocks in templates
+              {{ if eq (getResourceCondition "Ready" .observed.resources.project).Status "True" }}
               projectId: {{ .observed.resources.project.resource.status.atProvider.id | quote }}
               {{ end }}
-              fullCondition:
-                {{ getObservedResourceCondition . "project" "Ready" | toYaml | nindent 17 }}
+
+              # Alternative syntax using pipelines
+              pipeline:
+                {{ .observed.resources.project | getResourceCondition "Ready" | toYaml | nindent 4 }}
