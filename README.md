@@ -80,7 +80,7 @@ data:
 apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
 kind: CompositeConnectionDetails
 data:
-  server-endpoint: {{ b64enc ((index $.observed.resources "my-server").resource.status.atProvider.endpoint) }}
+  server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
 ```
 
 To mark a desired composed resource as ready, use the
