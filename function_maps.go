@@ -48,14 +48,12 @@ var funcMaps = []template.FuncMap{
 	},
 }
 
-func GetNewTemplateWithFunctionMaps(cfg *v1beta1.Config) *template.Template {
+func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	tpl := template.New("manifests")
 
-	if cfg != nil {
-		if cfg.Delims != nil {
-			if cfg.Delims.Left != nil && cfg.Delims.Right != nil {
-				tpl = tpl.Delims(*cfg.Delims.Left, *cfg.Delims.Right)
-			}
+	if delims != nil {
+		if delims.Left != nil && delims.Right != nil {
+			tpl = tpl.Delims(*delims.Left, *delims.Right)
 		}
 	}
 

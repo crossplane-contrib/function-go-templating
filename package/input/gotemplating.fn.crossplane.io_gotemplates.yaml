@@ -26,21 +26,17 @@ spec:
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
-          config:
-            description: Go Template Config
+          delims:
+            description: Template delimiters
             properties:
-              delims:
-                description: Template delimiters
-                properties:
-                  left:
-                    default: '{{'
-                    description: Template start characters
-                    type: string
-                  right:
-                    default: '}}'
-                    description: Template end characters
-                    type: string
-                type: object
+              left:
+                default: '{{'
+                description: Template start characters
+                type: string
+              right:
+                default: '}}'
+                description: Template end characters
+                type: string
             type: object
           fileSystem:
             description: FileSystem is the folder path where the templates are located

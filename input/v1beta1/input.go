@@ -18,9 +18,9 @@ import (
 type GoTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// Go Template Config
+	// Template delimiters
 	// +optional
-	Config *Config `json:"config,omitempty"`
+	Delims *Delims `json:"delims,omitempty"`
 	// Source specifies the different types of input sources that can be used with this function
 	Source TemplateSource `json:"source"`
 	// Inline is the inline form input of the templates
@@ -45,12 +45,6 @@ type TemplateSourceInline struct {
 
 type TemplateSourceFileSystem struct {
 	DirPath string `json:"dirPath,omitempty"`
-}
-
-type Config struct {
-	// Template delimiters
-	// +optional
-	Delims *Delims `json:"delims,omitempty"`
 }
 
 type Delims struct {
