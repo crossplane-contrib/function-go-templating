@@ -1,0 +1,47 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-function-get-resource-condition
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            apiVersion: {{ .observed.composite.resource.apiVersion }}
+            kind: {{ .observed.composite.resource.kind }}
+            status:
+              # Retreive condition of XR
+              compositeCondition:
+                {{ getResourceCondition "Ready" .observed.composite | toYaml | nindent 4 }}
+
+              # Retreive non existing condition of a resource just returns an Unknown condition
+              compositeConditionNotFound:
+                {{ getResourceCondition "Other" .observed.composite | toYaml | nindent 4 }}
+
+              # You can also retreive conditions of composed resources the same way
+              composedCondition:
+                {{ getResourceCondition "Ready" .observed.resources.project  | toYaml | nindent 4 }}
+
+              # Use a getResourceCondition to render conditional blocks in templates
+              {{ if eq (getResourceCondition "Ready" .observed.resources.project).Status "True" }}
+              projectId: {{ .observed.resources.project.resource.status.atProvider.id | quote }}
+              {{ end }}
+
+              # Alternative syntax using pipelines
+              pipeline:
+                {{ .observed.resources.project | getResourceCondition "Ready" | toYaml | nindent 4 }}
+
+              # Non object
+              nonResource:
+                {{ .observed.whatever | getResourceCondition "Ready" | toYaml | nindent 4 }}

@@ -1,12 +1,16 @@
 package main
 
 import (
-	"gopkg.in/yaml.v3"
 	"math/rand"
 	"text/template"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	sprig "github.com/Masterminds/sprig/v3"
+
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 )
 
 var funcMaps = []template.FuncMap{
@@ -29,6 +33,17 @@ var funcMaps = []template.FuncMap{
 			var res any
 			err := yaml.Unmarshal([]byte(val), &res)
 			return res, err
+		},
+
+		"getResourceCondition": func(ct string, res map[string]any) (xpv1.Condition, error) {
+			var conditioned xpv1.ConditionedStatus
+			if err := fieldpath.Pave(res).GetValueInto("resource.status", &conditioned); err != nil {
+				conditioned = xpv1.ConditionedStatus{}
+			}
+
+			// Return either found condition or empty one with "Unknown" status
+			cond := conditioned.GetCondition(xpv1.ConditionType(ct))
+			return cond, nil
 		},
 	},
 }

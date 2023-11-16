@@ -1,0 +1,12 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  key: value
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: "xr foo"
+      lastTransitionTime: "2023-11-03T09:07:31Z"
