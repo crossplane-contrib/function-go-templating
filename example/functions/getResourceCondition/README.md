@@ -1,20 +1,25 @@
-# getObservedResourceCondition
+# getResourceCondition
 
 ## Usage
 
-`getObservedResourceCondition $request $resourceName $conditionType`
+```golang
+{{ getResourceCondition $conditionType $resource }}
+{{ $resource | getResourceCondition $conditionType }}
+```
 
 Examples:
 
 ```golang
 // Print whole condition
-{{ getObservedResourceCondition . "project" "Ready" | toYaml }}
+{{ .observed.resources.project | getResourceCondition "Ready" | toYaml }}
 
 // Check status
-{{ if eq (getObservedResourceCondition . "project" "Ready").Status "True" }}
+{{ if eq (.observed.resources.project | getResourceCondition "Ready").Status "True" }}
     // do something
 {{ end }}
 ```
+
+See example composition for more usage examples
 
 ## Example Outputs
 

@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: example-function-get-observed-resource-condition
+  name: example-function-get-resource-condition
 spec:
   compositeTypeRef:
     apiVersion: example.crossplane.io/v1beta1
