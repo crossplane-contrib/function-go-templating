@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"testing"
+	"text/template"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -242,6 +244,86 @@ func Test_setResourceNameAnnotation(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
 				t.Errorf("%s\nsetResourceNameAnnotation(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_include(t *testing.T) {
+	type args struct {
+		val string
+	}
+	type want struct {
+		rsp string
+		err error
+	}
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"ExecTemplate": {
+			reason: "Should return the executed template",
+			args: args{
+				val: `
+{{- define "test-template" -}}
+value: {{.}}
+{{- end }}
+{{- $var:= include "test-template" "val" -}}
+Must capture output: {{$var}}`,
+			},
+			want: want{
+				rsp: `Must capture output: value: val`,
+			},
+		},
+		"TemplateErrorCtxNotSet": {
+			reason: "Should return error if ctx not set",
+			args: args{
+				val: `
+{{- define "test-template" -}}
+value: {{.}}
+{{- end }}
+{{- $var:= include "test-template" -}}
+Must capture output: {{$var}}
+`,
+			},
+			want: want{
+				err: cmpopts.AnyError,
+			},
+		},
+		"TemplateErrorTemplateNameNotSet": {
+			reason: "Should return error if template name not set",
+			args: args{
+				val: `
+{{- define "test-template" -}}
+value: {{.}}
+{{- end }}
+{{- $var:= include -}}
+Must capture output: {{$var}}
+`,
+			},
+			want: want{
+				err: cmpopts.AnyError,
+			},
+		},
+	}
+
+	tpl := template.New("")
+	tpl.Funcs(template.FuncMap{
+		"include": initInclude(tpl),
+	})
+
+	for name, tc := range cases {
+		_tpl := template.Must(tpl.Parse(tc.args.val))
+		t.Run(name, func(t *testing.T) {
+			rsp := &bytes.Buffer{}
+			err := _tpl.Execute(rsp, nil)
+			if diff := cmp.Diff(tc.want.rsp, rsp.String(), protocmp.Transform()); diff != "" {
+				t.Errorf("%s\nfromYaml(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\nfromYaml(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
 		})
 	}

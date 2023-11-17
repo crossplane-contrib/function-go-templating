@@ -1,0 +1,85 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-function-to-yaml
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- define "labels" -}}
+            some-text: {{.val1}}
+            other-text: {{.val2}}
+            {{- end }}
+            
+
+            ## weird indentation to make it work
+            {{- define "labels-metadata" -}}
+            some-text: {{.val1}}
+                other-text: {{.val2}}
+            {{- end }}
+            {{- define "labels-matchLabels" -}}
+            some-text: {{.val1}}
+                  other-text: {{.val2}}
+            {{- end }}
+            ---
+            #include example
+            {{$vals:= .observed.composite.resource.spec}}
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-deployment
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: test1
+              labels:
+                {{- include "labels" $vals | nindent 4}}
+            spec:
+              replicas: 3
+              selector:
+                matchLabels:
+                  {{- include "labels" $vals | nindent 6}}
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:1.14.2
+                    ports:
+                    - containerPort: 80
+            ---
+            # without include, you must define a template per indentation setting
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-deployment
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: test2
+              labels:
+                {{ template "labels-metadata" $vals}}
+            spec:
+              replicas: 3
+              selector:
+                matchLabels:
+                  {{ template "labels-matchLabels" $vals }}
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:1.14.2
+                    ports:
+                    - containerPort: 80
