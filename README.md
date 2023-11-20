@@ -75,6 +75,14 @@ data:
   connection-secret-key: connection-secret-value
 ```
 
+> Note: The value of the connection secret value must be base64 encoded. This is already the case if you are referencing a key from a mananged resource's `connectionDetails` field. However, if you want to include a connection secret value from somewhere else, you will need to use the `b64enc` Sprig function:
+```yaml
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: CompositeConnectionDetails
+data:
+  server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
+```
+
 To mark a desired composed resource as ready, use the
 `gotemplating.fn.crossplane.io/ready` annotation:
 
