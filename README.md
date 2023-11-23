@@ -115,6 +115,7 @@ about `crossplane beta render`.
 | [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object             |
 | [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources |
 | [`setResourceNameAnnotation`](example/functions/inline)          | Returns the special resource-name annotation with given name |
+| [`include`](example/functions/include)                           | Outputs template as a string                        |
 
 ## Developing this function
 
