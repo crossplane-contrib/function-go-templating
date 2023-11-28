@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	sprig "github.com/Masterminds/sprig/v3"
-
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
@@ -28,8 +28,14 @@ var funcMaps = []template.FuncMap{
 	},
 }
 
-func GetNewTemplateWithFunctionMaps() *template.Template {
+func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	tpl := template.New("manifests")
+
+	if delims != nil {
+		if delims.Left != nil && delims.Right != nil {
+			tpl = tpl.Delims(*delims.Left, *delims.Right)
+		}
+	}
 
 	for _, f := range funcMaps {
 		tpl.Funcs(f)
