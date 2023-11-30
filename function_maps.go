@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"text/template"
 	"time"
 
@@ -12,7 +13,10 @@ import (
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
+	"github.com/crossplane/function-sdk-go/errors"
 )
+
+const recursionMaxNums = 1000
 
 var funcMaps = []template.FuncMap{
 	{
@@ -36,6 +40,9 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	for _, f := range funcMaps {
 		tpl.Funcs(f)
 	}
+	tpl.Funcs(template.FuncMap{
+			"include": initInclude(tpl),
+	})
 	tpl.Funcs(sprig.FuncMap())
 
 	return tpl
@@ -75,4 +82,25 @@ func getResourceCondition(ct string, res map[string]any) xpv1.Condition {
 
 func setResourceNameAnnotation(name string) string {
 	return fmt.Sprintf("gotemplating.fn.crossplane.io/composition-resource-name: %s", name)
+}
+
+func initInclude(t *template.Template) func(string, interface{}) (string, error) {
+
+	includedNames := make(map[string]int)
+
+	return func(name string, data interface{}) (string, error) {
+		var buf strings.Builder
+		if v, ok := includedNames[name]; ok {
+			if v > recursionMaxNums {
+				return "", errors.Wrapf(fmt.Errorf("unable to execute template"), "rendering template has a nested reference name: %s", name)
+			}
+			includedNames[name]++
+		} else {
+			includedNames[name] = 1
+		}
+		err := t.ExecuteTemplate(&buf, name, data)
+		includedNames[name]--
+		return buf.String(), err
+	}
+
 }
