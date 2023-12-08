@@ -7,7 +7,7 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: test-user-{{ $i }}
   labels:
     testing.upbound.io/example-name: test-user-{{ $i }}
-  {{ if eq $.observed.resources nil }}
+  {{ if or ( eq $.observed.resources nil ) ( eq ( index $.observed.resources ( print "test-user-" $i ) ) nil ) }}
     dummy: {{ randomChoice "foo" "bar" "baz" }}
   {{ else }}
     dummy: {{ ( index $.observed.resources ( print "test-user-" $i ) ).resource.metadata.labels.dummy }}
