@@ -1,0 +1,23 @@
+apiVersion: kubernetes.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: test
+  labels:
+    {{- include "common-labels" . | nindent 4}}
+spec:
+  providerConfigRef:
+    name: default
+  forProvider:
+    manifest:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: test-001
+        namespace: test
+        labels:
+          {{- include "common-labels" . | nindent 10}}
+      data:
+        test: |
+          spec:
+            resources: []
