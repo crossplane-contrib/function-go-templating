@@ -83,9 +83,19 @@ func newFileSource(in *v1beta1.GoTemplate) (*FileSource, error) {
 func readTemplates(dir string) (string, error) {
 	tmpl := ""
 
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, e error) error {
+	if err := filepath.WalkDir(dir, func(path string, dirEntry os.DirEntry, e error) error {
 		if e != nil {
 			return e
+		}
+
+		// skip hidden directories
+		if dirEntry.IsDir() && dirEntry.Name()[0] == dotCharacter {
+			return filepath.SkipDir
+		}
+
+		info, err := dirEntry.Info()
+		if err != nil {
+			return err
 		}
 
 		// check for directory and hidden files/folders
