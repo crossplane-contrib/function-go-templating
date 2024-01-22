@@ -1,4 +1,4 @@
-package main
+package fn
 
 import (
 	"io/fs"

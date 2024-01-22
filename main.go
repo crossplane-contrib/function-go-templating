@@ -5,6 +5,8 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/crossplane/function-sdk-go"
+
+	"github.com/crossplane-contrib/function-go-templating/pkg/fn"
 )
 
 // CLI of this Function.
@@ -24,11 +26,7 @@ func (c *CLI) Run() error {
 		return err
 	}
 
-	return function.Serve(
-		&Function{
-			log:  log,
-			fsys: &osFS{},
-		},
+	return function.Serve(fn.NewFunction(fn.WithLogger(log)),
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
 		function.Insecure(c.Insecure))

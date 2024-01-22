@@ -1,4 +1,4 @@
-package main
+package fn
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 		tpl.Funcs(f)
 	}
 	tpl.Funcs(template.FuncMap{
-			"include": initInclude(tpl),
+		"include": initInclude(tpl),
 	})
 	tpl.Funcs(sprig.FuncMap())
 
