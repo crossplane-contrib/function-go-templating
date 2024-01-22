@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/base64"
 	"io"
+	"io/fs"
+	"os"
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -25,11 +27,20 @@ import (
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
+// osFS is a dead-simple implementation of [io/fs.FS] that just wraps around
+// [os.Open].
+type osFS struct{}
+
+func (*osFS) Open(name string) (fs.File, error) {
+	return os.Open(name)
+}
+
 // Function uses Go templates to compose resources.
 type Function struct {
 	fnv1beta1.UnimplementedFunctionRunnerServiceServer
 
-	log logging.Logger
+	log  logging.Logger
+	fsys fs.FS
 }
 
 const (
@@ -51,7 +62,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
-	tg, err := NewTemplateSourceGetter(in)
+	tg, err := NewTemplateSourceGetter(f.fsys, in)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid function input"))
 		return rsp, nil
