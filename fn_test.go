@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"testing"
 
@@ -38,6 +39,9 @@ var (
 
 	path      = "testdata/templates"
 	wrongPath = "testdata/wrong"
+
+	//go:embed testdata
+	testdataFS embed.FS
 )
 
 func TestRunFunction(t *testing.T) {
@@ -425,7 +429,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: lstat testdata/wrong: no such file or directory",
+							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: open testdata/wrong: file does not exist",
 						},
 					},
 				},
@@ -587,7 +591,10 @@ func TestRunFunction(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			f := &Function{log: logging.NewNopLogger()}
+			f := &Function{
+				log:  logging.NewNopLogger(),
+				fsys: testdataFS,
+			}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 
 			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {

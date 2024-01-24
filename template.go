@@ -1,7 +1,7 @@
 package main
 
 import (
-	"os"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/crossplane/function-sdk-go/errors"
@@ -18,12 +18,12 @@ type TemplateGetter interface {
 }
 
 // NewTemplateSourceGetter returns a TemplateGetter based on the cd source
-func NewTemplateSourceGetter(in *v1beta1.GoTemplate) (TemplateGetter, error) {
+func NewTemplateSourceGetter(fsys fs.FS, in *v1beta1.GoTemplate) (TemplateGetter, error) {
 	switch in.Source {
 	case v1beta1.InlineSource:
 		return newInlineSource(in)
 	case v1beta1.FileSystemSource:
-		return newFileSource(in)
+		return newFileSource(fsys, in)
 	case "":
 		return nil, errors.Errorf("source is required")
 	default:
@@ -62,14 +62,14 @@ func (fs *FileSource) GetTemplates() string {
 	return fs.Template
 }
 
-func newFileSource(in *v1beta1.GoTemplate) (*FileSource, error) {
+func newFileSource(fsys fs.FS, in *v1beta1.GoTemplate) (*FileSource, error) {
 	if in.FileSystem == nil || in.FileSystem.DirPath == "" {
 		return nil, errors.New("fileSystem.dirPath should be provided")
 	}
 
 	d := in.FileSystem.DirPath
 
-	tmpl, err := readTemplates(d)
+	tmpl, err := readTemplates(fsys, d)
 	if err != nil {
 		return nil, errors.Errorf("cannot read tmpl from the folder %s: %s", *in.FileSystem, err)
 	}
@@ -80,10 +80,10 @@ func newFileSource(in *v1beta1.GoTemplate) (*FileSource, error) {
 	}, nil
 }
 
-func readTemplates(dir string) (string, error) {
+func readTemplates(fsys fs.FS, dir string) (string, error) {
 	tmpl := ""
 
-	if err := filepath.WalkDir(dir, func(path string, dirEntry os.DirEntry, e error) error {
+	if err := fs.WalkDir(fsys, dir, func(path string, dirEntry fs.DirEntry, e error) error {
 		if e != nil {
 			return e
 		}
@@ -103,7 +103,7 @@ func readTemplates(dir string) (string, error) {
 			return nil
 		}
 
-		data, err := os.ReadFile(path)
+		data, err := fs.ReadFile(fsys, path)
 		if err != nil {
 			return err
 		}
