@@ -113,7 +113,7 @@ jobs:
         run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
 
       - name: Build Package
-        run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
+        run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=build/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
       
       - name: Upload Single-Platform Package
         uses: actions/upload-artifact@v4
