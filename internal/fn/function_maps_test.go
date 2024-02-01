@@ -1,4 +1,4 @@
-package main
+package fn
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func Test_fromYaml(t *testing.T) {
 complexDictionary:
   scalar1: true
   list:
-  - abc	
+  - abc
   - def`,
 			},
 			want: want{

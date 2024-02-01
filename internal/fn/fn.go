@@ -1,4 +1,4 @@
-package main
+package fn
 
 import (
 	"bytes"
@@ -41,6 +41,35 @@ type Function struct {
 
 	log  logging.Logger
 	fsys fs.FS
+}
+
+// FunctionOpt can modify a Function upon creation.
+type FunctionOpt func(f *Function)
+
+// WithLogger adds a logger to a Function.
+func WithLogger(log logging.Logger) FunctionOpt {
+	return func(f *Function) { f.log = log }
+}
+
+// WithFilesystem adds a filesystem to a Function.
+func WithFileSystem(fsys fs.FS) FunctionOpt {
+	return func(f *Function) { f.fsys = fsys }
+}
+
+// NewFunction creates a new Function with the given options.
+func NewFunction(opts ...FunctionOpt) *Function {
+	f := &Function{}
+	for _, opt := range opts {
+		opt(f)
+	}
+	// Set defaults
+	if f.fsys == nil {
+		f.fsys = &osFS{}
+	}
+	if f.log == nil {
+		f.log = logging.NewNopLogger()
+	}
+	return f
 }
 
 const (
