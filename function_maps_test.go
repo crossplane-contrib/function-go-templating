@@ -328,3 +328,75 @@ Must capture output: {{$var}}
 		})
 	}
 }
+
+func Test_getFiles(t *testing.T) {
+	type args struct {
+		pattern string
+	}
+	type want struct {
+		rsp []string
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"GetFilesWithGivenPattern": {
+			reason: "Should return list of files matching *test.go",
+			args: args{
+				pattern: "testdata/*.txt",
+			},
+			want: want{
+				rsp: []string{
+					"testdata/sample.txt",
+					"testdata/testfile.txt",
+				},
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rsp, _ := getFiles(tc.args.pattern)
+
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\ngetFiles(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_readFiles(t *testing.T) {
+	type args struct {
+		pattern string
+	}
+	type want struct {
+		rsp string
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"ReadFile": {
+			reason: "Should return contents of testdata/*.txt",
+			args: args{
+				pattern: "testdata/*.txt",
+			},
+			want: want{
+				rsp: "Hello world",
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rsp, _ := readFiles(tc.args.pattern, " ")
+
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\readFile(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+

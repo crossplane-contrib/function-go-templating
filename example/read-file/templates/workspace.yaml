@@ -1,0 +1,20 @@
+{{- $spec := .observed.composite.resource.spec }}
+---
+apiVersion: tf.upbound.io/v1beta1
+kind: Workspace
+metadata:
+  annotations: {{ setResourceNameAnnotation "workspace" }}
+  labels:
+    testing.upbound.io/example-name: test-read-file
+  name: observe-only-workspace
+spec:
+  forProvider:
+    source: Inline
+    module: {{ readFile "files/workspace.tf" | quote }}
+{{/* Alternatively
+    module: {{ readFiles "files/*.tf" "\n" | quote }}
+*/}}
+    varmap:
+      region: {{ $spec.region }}
+  providerConfigRef:
+    name: default

@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	"gopkg.in/yaml.v3"
-
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
@@ -24,6 +25,8 @@ var funcMaps = []template.FuncMap{
 		"toYaml":                    toYaml,
 		"fromYaml":                  fromYaml,
 		"getResourceCondition":      getResourceCondition,
+		"readFile":                  readFile,
+		"readFiles":                 readFiles,
 		"setResourceNameAnnotation": setResourceNameAnnotation,
 	},
 }
@@ -103,4 +106,33 @@ func initInclude(t *template.Template) func(string, interface{}) (string, error)
 		return buf.String(), err
 	}
 
+}
+
+func readFiles(pattern string, sep string) (string, error) {
+	filenames, err := getFiles(pattern)
+	if err != nil {
+		return "", err
+	}
+	contents := []string{}
+	for _, f := range filenames {
+		content, _ := readFile(f)
+		contents = append(contents, content)
+	}
+	return strings.Join(contents, sep), nil
+}
+
+func readFile(filename string) (string, error) {
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+func getFiles(pattern string) ([]string, error) {
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return matches, nil
 }

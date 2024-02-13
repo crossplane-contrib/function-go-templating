@@ -1,0 +1,32 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: function-go-templating
+spec:
+  deploymentTemplate:
+    metadata:
+      labels:
+        kubernetes.io/part-of: crossplane
+    spec:
+      selector: {}
+      template:
+        spec:
+          containers:
+          - name: package-runtime
+            args:
+            - --debug
+            volumeMounts:
+            - mountPath: /templates
+              name: templates
+              readOnly: true
+            - mountPath: /files
+              name: files
+              readOnly: true
+          volumes:
+          - name: templates
+            configMap:
+              name: read-file-example-templates
+          - name: files
+            configMap:
+              name: read-file-example-files
+
