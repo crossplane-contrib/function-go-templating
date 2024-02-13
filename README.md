@@ -116,6 +116,8 @@ about `crossplane beta render`.
 | [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources |
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
 | [`include`](example/functions/include)                           | Outputs template as a string                        |
+| [`readFile`](example/functions/readfile)                         | Outputs the contents of a given file                |
+| [`readFiles`](example/functions/readfile)                        | Outputs the contents of multiple files              |
 
 ## Developing this function
 
