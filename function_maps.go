@@ -10,10 +10,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	sprig "github.com/Masterminds/sprig/v3"
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
+
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 const recursionMaxNums = 1000
@@ -25,6 +26,8 @@ var funcMaps = []template.FuncMap{
 		"fromYaml":                  fromYaml,
 		"getResourceCondition":      getResourceCondition,
 		"setResourceNameAnnotation": setResourceNameAnnotation,
+		"getComposedResource":       getComposedResource,
+		"getCompositeResource":      getCompositeResource,
 	},
 }
 
@@ -41,7 +44,7 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 		tpl.Funcs(f)
 	}
 	tpl.Funcs(template.FuncMap{
-			"include": initInclude(tpl),
+		"include": initInclude(tpl),
 	})
 	tpl.Funcs(sprig.FuncMap())
 
@@ -103,4 +106,24 @@ func initInclude(t *template.Template) func(string, interface{}) (string, error)
 		return buf.String(), err
 	}
 
+}
+
+func getComposedResource(req map[string]any, name string) map[string]any {
+	var cr map[string]any
+	path := fmt.Sprintf("observed.resources.%s.resource", name)
+	if err := fieldpath.Pave(req).GetValueInto(path, &cr); err != nil {
+		return nil
+	}
+
+	return cr
+}
+
+func getCompositeResource(req map[string]any) map[string]any {
+	var cr map[string]any
+	path := fmt.Sprintf("observed.composite.resource")
+	if err := fieldpath.Pave(req).GetValueInto(path, &cr); err != nil {
+		return nil
+	}
+
+	return cr
 }
