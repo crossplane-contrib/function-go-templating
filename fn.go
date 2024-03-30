@@ -114,7 +114,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		// can inadvertently be set as annotations, leading to unexpected behavior in later processing
 		// steps that assume string-only values, such as GetAnnotations.
 		if _, _, err := unstructured.NestedStringMap(u.Object, "metadata", "annotations"); err != nil {
-			response.Fatal(rsp, errors.Wrapf(err, "invalid annotations in resource %q", u.GroupVersionKind()))
+			m, _, _ := unstructured.NestedMap(u.Object, "metadata", "annotations")
+			response.Fatal(rsp, errors.Wrapf(err, "invalid annotations in resource '%s resource-name=%v", u.GroupVersionKind(), m[annotationKeyCompositionResourceName]))
 			return rsp, nil
 		}
 
