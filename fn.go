@@ -105,17 +105,20 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			response.Fatal(rsp, errors.Wrap(err, "cannot decode manifest"))
 			return rsp, nil
 		}
+
+		if u == nil {
+			continue
+		}
+
 		// When decoding YAML into an Unstructured object, unquoted values like booleans or integers
 		// can inadvertently be set as annotations, leading to unexpected behavior in later processing
 		// steps that assume string-only values, such as GetAnnotations.
 		if _, _, err := unstructured.NestedStringMap(u.Object, "metadata", "annotations"); err != nil {
-			response.Fatal(rsp, errors.Wrap(err, "invalid function input: invalid %v"))
+			response.Fatal(rsp, errors.Wrapf(err, "invalid annotations in resource %q", u.GroupVersionKind()))
 			return rsp, nil
 		}
 
-		if u != nil {
-			objs = append(objs, u)
-		}
+		objs = append(objs, u)
 	}
 
 	// Get the desired composite resource from the request.
