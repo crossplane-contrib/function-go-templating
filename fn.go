@@ -143,6 +143,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		return rsp, nil
 	}
 
+	// Initialize the requirements.
+	requirements := &fnv1beta1.Requirements{ExtraResources: make(map[string]*fnv1beta1.ResourceSelector)}
+
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
 		cd := resource.NewDesiredComposed()
@@ -177,14 +180,28 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		}
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
-		// Set composite resource's connection details.
 		if cd.Resource.GetAPIVersion() == metaApiVersion {
 			switch obj.GetKind() {
 			case "CompositeConnectionDetails":
+				// Set composite resource's connection details.
 				con, _ := cd.Resource.GetStringObject("data")
 				for k, v := range con {
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
 					desiredComposite.ConnectionDetails[k] = d
+				}
+			case "ExtraResources":
+				// Set extra resources requirements.
+				ers := make(ExtraResourcesRequirements)
+				if err = cd.Resource.GetValueInto("requirements", &ers); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get extra resources requirements"))
+					return rsp, nil
+				}
+				for k, v := range ers {
+					if _, found := requirements.ExtraResources[k]; found {
+						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
+						return rsp, nil
+					}
+					requirements.ExtraResources[k] = v.ToResourceSelector()
 				}
 			default:
 				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails", obj.GetKind(), metaApiVersion))
@@ -232,6 +249,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	if err := response.SetDesiredCompositeResource(rsp, desiredComposite); err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite resource"))
 		return rsp, nil
+	}
+
+	if len(requirements.ExtraResources) > 0 {
+		rsp.Requirements = requirements
 	}
 
 	f.log.Info("Successfully composed desired resources", "source", in.Source, "count", len(objs))

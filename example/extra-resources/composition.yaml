@@ -1,0 +1,40 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-extra-resources
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ExtraResources
+            requirements:
+              bucket:
+                apiVersion: s3.aws.upbound.io/v1beta1
+                kind: Bucket
+                matchName: my-awesome-{{ .observed.composite.resource.spec.environment }}-bucket
+            {{ with index (default (dig "some-foo-by-name" "items" .extraResources)) 0 }}
+            {{ $bucketName := index . "resource" "status" "atProvider" "id" }}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: CompositeConnectionDetails
+            data:
+              BUCKET_NAME: {{ $bucketName | b64enc }}
+            {{- end }}
+            ---
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            status:
+              dummy: cool-status
