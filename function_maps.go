@@ -7,14 +7,11 @@ import (
 	"text/template"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	sprig "github.com/Masterminds/sprig/v3"
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
-
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 const recursionMaxNums = 1000
@@ -120,8 +117,7 @@ func getComposedResource(req map[string]any, name string) map[string]any {
 
 func getCompositeResource(req map[string]any) map[string]any {
 	var cr map[string]any
-	path := fmt.Sprintf("observed.composite.resource")
-	if err := fieldpath.Pave(req).GetValueInto(path, &cr); err != nil {
+	if err := fieldpath.Pave(req).GetValueInto("observed.composite.resource", &cr); err != nil {
 		return nil
 	}
 
