@@ -12,6 +12,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
+	"gopkg.in/yaml.v3"
 )
 
 const recursionMaxNums = 1000
