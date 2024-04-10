@@ -18,12 +18,13 @@ spec:
         inline:
           template: |
             ---
+            {{ $flexServerResourceName := "flexServer" }}
             # Create an initial composed resource for which we will retrieve a value
             apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
             kind: FlexibleServer
             metadata:
               annotations:
-                {{ setResourceNameAnnotation "flexserver" }}
+                {{ setResourceNameAnnotation $flexServerResourceName }}
                 gotemplating.fn.crossplane.io/ready: "False"
             spec:
               forProvider:
@@ -32,7 +33,7 @@ spec:
                 name: my-provider-cfg
             ---
             # Use getComposedResource to retrieve the observed resource named "flexServer"
-            {{ $flexServer := getComposedResource . "flexServer" }}
+            {{ $flexServer := getComposedResource . $flexServerResourceName }}
             
             apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
             kind: FlexibleServerConfiguration
