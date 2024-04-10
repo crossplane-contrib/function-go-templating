@@ -7,7 +7,7 @@ Examples:
 
 ```golang
 // Retrieve the observed resource named "flexServer" from the function request
-{{ flexServer := getComposedResource . "flexServer" }}
+{{ $flexServer := getComposedResource . "flexServer" }}
 
 // Extract values from the observed resource 
 {{ $flexServerID := get $flexServer.status.atProvider "id" }}
