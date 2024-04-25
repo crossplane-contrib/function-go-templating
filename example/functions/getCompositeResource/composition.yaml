@@ -1,0 +1,35 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-function-get-composite-resource
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            # Use a getCompositeResource to retrieve the XR 
+            {{ $xr := getCompositeResource . }}
+            
+            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+            kind: FlexibleServer
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "flexserver" }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec:
+              forProvider:
+            
+                # Use the XR object to set values 
+                adminLogin: {{ get $xr.spec "adminLogin" }}
+                location: {{ get $xr.spec "location" }}

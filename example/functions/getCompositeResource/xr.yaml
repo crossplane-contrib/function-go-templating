@@ -1,0 +1,7 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  adminLogin: "admin"
+  location: "eastus"

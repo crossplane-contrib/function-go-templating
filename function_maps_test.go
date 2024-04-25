@@ -328,3 +328,134 @@ Must capture output: {{$var}}
 		})
 	}
 }
+
+func Test_getComposedResource(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp map[string]any
+	}
+
+	completeResource := map[string]any{
+		"apiVersion": "dbforpostgresql.azure.upbound.io/v1beta1",
+		"kind":       "FlexibleServer",
+		"spec": map[string]any{
+			"forProvider": map[string]any{
+				"storageMb": "32768",
+			},
+		},
+		"status": map[string]any{
+			"atProvider": map[string]any{
+				"id": "abcdef",
+			},
+		},
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveCompleteResource": {
+			reason: "Should successfully retrieve the complete resource",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"flexserver": map[string]any{
+								"resource": completeResource,
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{rsp: completeResource},
+		},
+		"ResourceNotFound": {
+			reason: "Should return nil if the resource is not found",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{},
+					},
+				},
+				name: "missingResource",
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getComposedResource(tc.args.req, tc.args.name)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetComposedResource(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_getCompositeResource(t *testing.T) {
+	type args struct {
+		req map[string]any
+	}
+
+	type want struct {
+		rsp map[string]any
+	}
+
+	compositeResource := map[string]any{
+		"apiVersion": "example.crossplane.io/v1beta1",
+		"kind":       "XR",
+		"metadata": map[string]any{
+			"name": "example",
+		},
+		"spec": map[string]any{
+			"key": "value",
+		},
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveCompositeResource": {
+			reason: "Should successfully retrieve the composite resource",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"composite": map[string]any{
+							"resource": compositeResource,
+						},
+					},
+				},
+			},
+			want: want{rsp: compositeResource},
+		},
+		"ResourceNotFound": {
+			reason: "Should return nil if the composite resource is not found",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"composite": map[string]any{},
+					},
+				},
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getCompositeResource(tc.args.req)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetCompositeResource(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
