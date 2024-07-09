@@ -29,15 +29,15 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1beta1.ResourceSele
 		ApiVersion: e.APIVersion,
 		Kind:       e.Kind,
 	}
-	if len(e.MatchLabels) == 0 {
-		out.Match = &fnv1beta1.ResourceSelector_MatchName{
-			MatchName: e.MatchName,
+	if e.MatchName == "" {
+		out.Match = &fnv1beta1.ResourceSelector_MatchLabels{
+			MatchLabels: &fnv1beta1.MatchLabels{Labels: e.MatchLabels},
 		}
 		return out
 	}
 
-	out.Match = &fnv1beta1.ResourceSelector_MatchLabels{
-		MatchLabels: &fnv1beta1.MatchLabels{Labels: e.MatchLabels},
+	out.Match = &fnv1beta1.ResourceSelector_MatchName{
+		MatchName: e.MatchName,
 	}
 	return out
 }
