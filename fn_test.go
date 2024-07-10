@@ -38,7 +38,8 @@ var (
 	xrWithNestedStatusBaz = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
 
 	extraResources = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
-{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{"key": "value"}},"yet-another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"foo"}}}`
+{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{"key": "value"}},"yet-another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"foo"}}}
+{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
 	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
 
@@ -645,6 +646,15 @@ func TestRunFunction(t *testing.T) {
 								Kind:       "CoolExtraResource",
 								Match: &fnv1beta1.ResourceSelector_MatchName{
 									MatchName: "foo",
+								},
+							},
+							"all-cool-resources": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1beta1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1beta1.MatchLabels{
+										Labels: map[string]string{},
+									},
 								},
 							},
 						},
