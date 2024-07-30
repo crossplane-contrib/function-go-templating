@@ -12,5 +12,9 @@
       "matchFileNames": ["example/**"],
       "groupName": "examples"
     }
+  ],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
   ]
 }
