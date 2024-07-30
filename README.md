@@ -92,7 +92,7 @@ kind: Bucket
 metadata:
   annotations:
     gotemplating.fn.crossplane.io/composition-resource-name: bucket
-    gotemplating.fn.crossplane.io/ready: True
+    gotemplating.fn.crossplane.io/ready: "True"
 spec: {}
 ```
 
