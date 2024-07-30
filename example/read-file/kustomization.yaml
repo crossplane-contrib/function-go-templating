@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- composition.yaml
+- functions.yaml
+configMapGenerator:
+- name: read-file-example-templates
+  files:
+  - templates/workspace.yaml
+- name: read-file-example-files
+  files:
+  - terraform/workspace.tf
+generatorOptions:
+  disableNameSuffixHash: true
