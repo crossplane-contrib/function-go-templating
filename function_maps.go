@@ -44,7 +44,13 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	tpl.Funcs(template.FuncMap{
 		"include": initInclude(tpl),
 	})
-	tpl.Funcs(sprig.FuncMap())
+	// Sprig's env and expandenv can lead to information leakage (injected tokens/passwords).
+	// Both Helm and ArgoCD remove these due to security implications.
+	// see: https://masterminds.github.io/sprig/os.html
+	sprigFuncs := sprig.FuncMap()
+	delete(sprigFuncs, "env")
+	delete(sprigFuncs, "expandenv")
+	tpl.Funcs(sprigFuncs)
 
 	return tpl
 }
