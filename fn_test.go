@@ -594,7 +594,7 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"ExtraResources": {
-			reason: "The Function should return a fatal result if the extra resource key is duplicated.",
+			reason: "The Function should return the desired composite with extra resources.",
 			args: args{
 				req: &fnv1beta1.RunFunctionRequest{
 					Input: resource.MustStructObject(
