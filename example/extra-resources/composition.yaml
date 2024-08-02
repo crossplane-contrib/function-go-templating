@@ -25,13 +25,27 @@ spec:
                 apiVersion: s3.aws.upbound.io/v1beta1
                 kind: Bucket
                 matchName: my-awesome-{{ .observed.composite.resource.spec.environment }}-bucket
-            {{ with index (default (dig "some-foo-by-name" "items" .extraResources)) 0 }}
-            {{ $bucketName := index . "resource" "status" "atProvider" "id" }}
+            {{- with .extraResources }}
+            {{ $someExtraResources := index . "bucket" }}
+            {{- range $i, $extraResource := $someExtraResources.items }}
             ---
-            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
-            kind: CompositeConnectionDetails
-            data:
-              BUCKET_NAME: {{ $bucketName | b64enc }}
+            apiVersion: kubernetes.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              annotations: 
+                gotemplating.fn.crossplane.io/composition-resource-name: bucket-configmap-{{ $i }}
+            spec:
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: Configmap
+                  metadata:
+                    name: {{ $extraResource.resource.metadata.name }}-bucket
+                  data:
+                    bucket: {{ $extraResource.resource.status.atProvider.id }} 
+              providerConfigRef:
+                name: "kubernetes"
+            {{- end }}
             {{- end }}
             ---
             apiVersion: example.crossplane.io/v1beta1

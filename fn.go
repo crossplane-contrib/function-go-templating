@@ -204,7 +204,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					requirements.ExtraResources[k] = v.ToResourceSelector()
 				}
 			default:
-				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails", obj.GetKind(), metaApiVersion))
+				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails or ExtraResources", obj.GetKind(), metaApiVersion))
 				return rsp, nil
 			}
 

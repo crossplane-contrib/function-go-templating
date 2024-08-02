@@ -549,7 +549,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails",
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails or ExtraResources",
 						},
 					},
 					Desired: &fnv1beta1.State{
