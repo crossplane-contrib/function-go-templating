@@ -37,6 +37,12 @@ var (
 	xrWithNestedStatusFoo = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"}}}`
 	xrWithNestedStatusBaz = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
 
+	extraResources = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
+{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{"key": "value"}},"yet-another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"foo"}}}
+{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
+	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
+{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
+
 	path      = "testdata/templates"
 	wrongPath = "testdata/wrong"
 
@@ -543,7 +549,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails",
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be CompositeConnectionDetails or ExtraResources",
 						},
 					},
 					Desired: &fnv1beta1.State{
@@ -582,6 +588,133 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1beta1.Resource{
 							Resource:          resource.MustStructJSON(xr),
 							ConnectionDetails: map[string][]byte{"key": []byte("value")},
+						},
+					},
+				},
+			},
+		},
+		"ExtraResources": {
+			reason: "The Function should return the desired composite with extra resources.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResources},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta:    &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{},
+					Requirements: &fnv1beta1.Requirements{
+						ExtraResources: map[string]*fnv1beta1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1beta1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
+							"another-cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1beta1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1beta1.MatchLabels{
+										Labels: map[string]string{"key": "value"},
+									},
+								},
+							},
+							"yet-another-cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1beta1.ResourceSelector_MatchName{
+									MatchName: "foo",
+								},
+							},
+							"all-cool-resources": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1beta1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1beta1.MatchLabels{
+										Labels: map[string]string{},
+									},
+								},
+							},
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+							},
+						},
+					},
+				},
+			},
+		},
+		"DuplicateExtraResourceKey": {
+			reason: "The Function should return a fatal result if the extra resource key is duplicated.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResourcesDuplicatedKey},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1beta1.Result{
+						{
+							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Message:  "duplicate extra resource key \"cool-extra-resource\"",
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(cd),
+							},
 						},
 					},
 				},
