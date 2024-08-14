@@ -59,6 +59,7 @@ pipeline context using notation like:
 - `{{ .desired.composite.resource.status.widgets }}`
 - `{{ (index .desired.composed "resource-name").resource.spec.widgets }}`
 - `{{ index .context "apiextensions.crossplane.io/environment" }}`
+- `{{ index .extraResources "some-bucket-by-name" }}`
 
 This function supports all of Go's [built-in template functions][builtin]. The
 above examples use the `index` function to access keys like `resource-name` that
@@ -106,6 +107,65 @@ $ crossplane beta render xr.yaml composition.yaml functions.yaml
 See the [composition functions documentation][docs-functions] to learn more
 about `crossplane beta render`.
 
+### ExtraResources
+
+By defining one or more special `ExtraResources`, you can ask Crossplane to
+retrieve additional resources from the local cluster and make them available to
+your templates. See the [docs][extra-resources] for more information.
+
+```yaml
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: ExtraResources
+requirements:
+  some-foo-by-name:
+    # Resources can be requested either by name
+    apiVersion: example.com/v1beta1
+    kind: Foo
+    matchName: "some-extra-foo"
+  some-foo-by-labels:
+    # Or by label.
+    apiVersion: example.com/v1beta1
+    kind: Foo
+    matchLabels:
+      app: my-app
+  some-bar-by-a-computed-label:
+    # But you can also generate them dynamically using the template, for example:
+    apiVersion: example.com/v1beta1
+    kind: Bar
+    matchLabels:
+      foo: {{ .observed.composite.resource.name }}
+```
+
+This will result in Crossplane retrieving the requested resources and making
+them available to your templates under the `extraResources` key, with the
+following format:
+
+```json5
+{
+  "extraResources": {
+    "some-foo-by-name": [
+      // ... the requested bucket if found, empty otherwise ...
+    ],
+    "some-foo-by-labels": [
+      // ... the requested buckets if found, empty otherwise ...
+    ],
+    // ... any other requested extra resources ...
+  }
+}
+```
+
+So, you can access the retrieved resources in your templates like this, for
+example:
+
+```yaml
+{{ someExtraResources := index .extraResources "some-extra-resources-key" }}
+{{- range $i, $extraResource := $someExtraResources }}
+#
+# Do something for each retrieved extraResource
+#
+{{- end }}
+```
+
 ## Additional functions
 
 | Name                                                             | Description                                                  |
@@ -147,3 +207,4 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [go]: https://go.dev
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
+[extra-resources]: https://docs.crossplane.io/latest/concepts/composition-functions/#how-composition-functions-work
