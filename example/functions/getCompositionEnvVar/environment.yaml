@@ -1,0 +1,6 @@
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: example-environment
+data:
+  adminLogin: admin
