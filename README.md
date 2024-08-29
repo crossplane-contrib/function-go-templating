@@ -174,7 +174,7 @@ example:
 | [`toYaml`](example/functions/toYaml)                             | Marshals any object into a YAML string                       |
 | [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object                      |
 | [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources          |
-| [`getComposedResouce`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
+| [`getComposedResource`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
 | [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retreive the observed composite resource |
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
 | [`include`](example/functions/include)                           | Outputs template as a string                                 |
