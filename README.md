@@ -158,8 +158,8 @@ So, you can access the retrieved resources in your templates like this, for
 example:
 
 ```yaml
-{{ someExtraResources := index .extraResources "some-extra-resources-key" }}
-{{- range $i, $extraResource := $someExtraResources }}
+{{- $someExtraResources := index .extraResources "some-extra-resources-key" }}
+{{- range $i, $extraResource := $someExtraResources.items }}
 #
 # Do something for each retrieved extraResource
 #
