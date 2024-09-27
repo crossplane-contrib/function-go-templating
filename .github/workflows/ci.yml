@@ -37,7 +37,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
           version: ${{ env.GOLANGCI_VERSION }}
 
   unit-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
   # those packages to GitHub as a build artifact. The push job downloads those
   # artifacts and pushes them as a single multi-platform package.
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: true
       matrix:
@@ -130,7 +130,7 @@ jobs:
   # pushes them as a multi-platform package. We only push the package it the
   # XPKG_ACCESS_ID and XPKG_TOKEN secrets were provided.
   push:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - build
     steps:
