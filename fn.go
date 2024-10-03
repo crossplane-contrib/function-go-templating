@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -51,9 +50,6 @@ const (
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
-
-	// Key used by function-environment-configs
-	functionContextKeyEnvironment = "apiextensions.crossplane.io/environment"
 )
 
 // RunFunction runs the Function.
@@ -204,7 +200,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 				for key, data := range contextData {
 					val, ok := data.(map[string]interface{})
 					if !ok {
-						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context"))
+						response.Fatal(rsp, errors.Wrapf(err, "cannot convert Context from %T context key %q", req, key))
 						return rsp, nil
 					}
 					// Check if key is already defined in the context
@@ -217,7 +213,6 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 						}
 						f.log.Debug("Loaded Existing Composition environment from Function context", "context-key", key)
 						if err := mergo.Merge(&inputEnv.Object, val); err != nil {
-							fmt.Println(err)
 							response.Fatal(rsp, errors.Wrapf(err, "cannot merge data %T at context key %q", req, key))
 							return rsp, nil
 						}
@@ -233,7 +228,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context to protobuf Struct well-known type"))
 						return rsp, nil
 					}
-					//f.log.Debug("Updating Composition environment", "key", key, "with data", v)
+					f.log.Debug("Updating Composition environment", "key", key, "with data", v)
 					response.SetContextKey(rsp, key, structpb.NewStructValue(v))
 				}
 			case "ExtraResources":
