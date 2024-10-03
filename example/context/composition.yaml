@@ -36,9 +36,8 @@ spec:
                update: environment
                nestedEnvUpdate:
                  hello: world
-            # Examine what is happening here
             "other-context-key":
-              complex: {{ index .context "apiextensions.crossplane.io/environment" "complex" | toYaml | nindent 4 }}
+              complex: {{ index .context "apiextensions.crossplane.io/environment" "complex" | toYaml | nindent 6 }}
             newkey:
               hello: world
           ---
