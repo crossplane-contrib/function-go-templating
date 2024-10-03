@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
@@ -48,6 +51,9 @@ const (
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
+
+	// Key used by function-environment-configs
+	functionContextKeyEnvironment = "apiextensions.crossplane.io/environment"
 )
 
 // RunFunction runs the Function.
@@ -188,6 +194,47 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 				for k, v := range con {
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
 					desiredComposite.ConnectionDetails[k] = d
+				}
+			case "Context":
+				contextData := make(map[string]any)
+				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get contexts"))
+					return rsp, nil
+				}
+				for key, data := range contextData {
+					val, ok := data.(map[string]interface{})
+					if !ok {
+						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context"))
+						return rsp, nil
+					}
+					// Check if key is already defined in the context
+					var inputEnv *unstructured.Unstructured
+					if v, ok := request.GetContextKey(req, key); ok {
+						inputEnv = &unstructured.Unstructured{}
+						if err := resource.AsObject(v.GetStructValue(), inputEnv); err != nil {
+							response.Fatal(rsp, errors.Wrapf(err, "cannot get Composition environment from %T context key %q", req, key))
+							return rsp, nil
+						}
+						f.log.Debug("Loaded Existing Composition environment from Function context", "context-key", key)
+						if err := mergo.Merge(&inputEnv.Object, val); err != nil {
+							fmt.Println(err)
+							response.Fatal(rsp, errors.Wrapf(err, "cannot merge data %T at context key %q", req, key))
+							return rsp, nil
+						}
+					} else {
+						inputEnv = &unstructured.Unstructured{Object: val}
+					}
+
+					if inputEnv.GroupVersionKind().Empty() {
+						inputEnv.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Kind: "Environment", Version: "v1alpha1"})
+					}
+					v, err := resource.AsStruct(inputEnv)
+					if err != nil {
+						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context to protobuf Struct well-known type"))
+						return rsp, nil
+					}
+					//f.log.Debug("Updating Composition environment", "key", key, "with data", v)
+					response.SetContextKey(rsp, key, structpb.NewStructValue(v))
 				}
 			case "ExtraResources":
 				// Set extra resources requirements.
