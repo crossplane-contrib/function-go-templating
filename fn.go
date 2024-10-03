@@ -194,7 +194,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 			case "Context":
 				contextData := make(map[string]any)
 				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
-					response.Fatal(rsp, errors.Wrap(err, "cannot get contexts"))
+					response.Fatal(rsp, errors.Wrap(err, "cannot get Contexts from input"))
 					return rsp, nil
 				}
 				for key, data := range contextData {
@@ -203,27 +203,16 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 						response.Fatal(rsp, errors.Wrapf(err, "cannot convert Context from %T context key %q", req, key))
 						return rsp, nil
 					}
-					// Check if key is already defined in the context
-					var inputEnv *unstructured.Unstructured
-					if v, ok := request.GetContextKey(req, key); ok {
-						inputEnv = &unstructured.Unstructured{}
-						if err := resource.AsObject(v.GetStructValue(), inputEnv); err != nil {
-							response.Fatal(rsp, errors.Wrapf(err, "cannot get Composition environment from %T context key %q", req, key))
-							return rsp, nil
-						}
-						f.log.Debug("Loaded Existing Composition environment from Function context", "context-key", key)
-						if err := mergo.Merge(&inputEnv.Object, val); err != nil {
-							response.Fatal(rsp, errors.Wrapf(err, "cannot merge data %T at context key %q", req, key))
-							return rsp, nil
-						}
-					} else {
-						inputEnv = &unstructured.Unstructured{Object: val}
+					mergedCtx, err := f.MergeContextKey(key, val, req)
+					if err != nil {
+						response.Fatal(rsp, errors.Wrapf(err, "cannot merge Context"))
+						return rsp, nil
 					}
 
-					if inputEnv.GroupVersionKind().Empty() {
-						inputEnv.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Kind: "Environment", Version: "v1alpha1"})
+					if mergedCtx.GroupVersionKind().Empty() {
+						mergedCtx.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Kind: "Environment", Version: "v1alpha1"})
 					}
-					v, err := resource.AsStruct(inputEnv)
+					v, err := resource.AsStruct(mergedCtx)
 					if err != nil {
 						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context to protobuf Struct well-known type"))
 						return rsp, nil
