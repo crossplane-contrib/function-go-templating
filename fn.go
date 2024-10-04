@@ -192,7 +192,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					desiredComposite.ConnectionDetails[k] = d
 				}
 			case "Context":
-				contextData := make(map[string]any)
+				contextData := make(map[string]interface{})
 				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
 					response.Fatal(rsp, errors.Wrap(err, "cannot get Contexts from input"))
 					return rsp, nil
@@ -200,7 +200,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 				for key, data := range contextData {
 					val, ok := data.(map[string]interface{})
 					if !ok {
-						response.Fatal(rsp, errors.Wrapf(err, "cannot convert Context from %T context key %q", req, key))
+						response.Fatal(rsp, errors.Errorf("error parsing Context data from %T context key %q. Must be a map.", req, key))
 						return rsp, nil
 					}
 					mergedCtx, err := f.MergeContextKey(key, val, req)
@@ -235,7 +235,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					requirements.ExtraResources[k] = v.ToResourceSelector()
 				}
 			default:
-				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails or ExtraResources", obj.GetKind(), metaApiVersion))
+				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
 				return rsp, nil
 			}
 
