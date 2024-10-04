@@ -32,12 +32,18 @@ spec:
           apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
           kind: Context
           data:
+            # update existing EnvironmentConfig by using the "apiextensions.crossplane.io/environment" key
             "apiextensions.crossplane.io/environment":
                update: environment
                nestedEnvUpdate:
                  hello: world
+               array:
+               - "1"
+               - "2"
+            # read existing context and move it to another key
             "other-context-key":
               complex: {{ index .context "apiextensions.crossplane.io/environment" "complex" | toYaml | nindent 6 }}
+            # Create a new Context key and populate it with data
             newkey:
               hello: world
           ---

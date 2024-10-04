@@ -31,16 +31,34 @@ status:
   fromEnv: e
 ---
 apiVersion: render.crossplane.io/v1beta1
-kind: Context
 fields:
   apiextensions.crossplane.io/environment:
+    apiVersion: internal.crossplane.io/v1alpha1
+    array:
+    - "1"
+    - "2"
+    complex:
+      a: b
+      c:
+        d: e
+        f: "1"
     kind: Environment
+    nestedEnvUpdate:
+      hello: world
+    update: environment
+  newkey:
+    apiVersion: internal.crossplane.io/v1alpha1
+    hello: world
+    kind: Environment
+  other-context-key:
     apiVersion: internal.crossplane.io/v1alpha1
     complex:
       a: b
       c:
         d: e
         f: "1"
+    kind: Environment
+kind: Context
 ```
 
 ## Debugging This Function
