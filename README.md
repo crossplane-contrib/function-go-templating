@@ -166,6 +166,42 @@ example:
 {{- end }}
 ```
 
+### Writing to the Context
+
+This function can write to the Composition [Context](https://docs.crossplane.io/latest/concepts/compositions/#function-pipeline-context). Subsequent pipeline steps will be able to access the data.
+
+```yaml
+---
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: Context
+data:
+  region: {{ $spec.region }}
+  id: field
+  array:
+  - "1" 
+  - "2"
+```
+
+To update Context data, match an existing key. For example, [function-environment-configs](https://github.com/crossplane-contrib/function-environment-configs)
+stores data under the key `apiextensions.crossplane.io/environment`.
+
+In this case, Environment fields `update` and `nestedEnvUpdate.hello` would be updated with new values.
+
+```yaml
+---
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: Context
+data:
+  "apiextensions.crossplane.io/environment":
+      update: environment
+      nestedEnvUpdate:
+        hello: world
+  otherContextData:
+    test: field
+```
+
+For more information, see the example in [context](example/context).
+
 ## Additional functions
 
 | Name                                                             | Description                                                  |
