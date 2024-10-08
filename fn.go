@@ -10,6 +10,7 @@ import (
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -189,6 +190,27 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
 					desiredComposite.ConnectionDetails[k] = d
 				}
+			case "Context":
+				contextData := make(map[string]interface{})
+				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get Contexts from input"))
+					return rsp, nil
+				}
+				mergedCtx, err := f.MergeContext(req, contextData)
+				if err != nil {
+					response.Fatal(rsp, errors.Wrapf(err, "cannot merge Context"))
+					return rsp, nil
+				}
+
+				for key, v := range mergedCtx {
+					vv, err := structpb.NewValue(v)
+					if err != nil {
+						response.Fatal(rsp, errors.Wrap(err, "cannot convert value to structpb.Value"))
+						return rsp, nil
+					}
+					f.log.Debug("Updating Composition environment", "key", key, "data", v)
+					response.SetContextKey(rsp, key, vv)
+				}
 			case "ExtraResources":
 				// Set extra resources requirements.
 				ers := make(ExtraResourcesRequirements)
@@ -204,7 +226,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					requirements.ExtraResources[k] = v.ToResourceSelector()
 				}
 			default:
-				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be CompositeConnectionDetails or ExtraResources", obj.GetKind(), metaApiVersion))
+				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
 				return rsp, nil
 			}
 
