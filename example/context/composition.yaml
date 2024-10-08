@@ -34,8 +34,8 @@ spec:
           data:
             # update existing EnvironmentConfig by using the "apiextensions.crossplane.io/environment" key
             "apiextensions.crossplane.io/environment":
-               kind: Environment,
-               apiVersion: internal.crossplane.io/v1alpha1,
+               kind: Environment
+               apiVersion: internal.crossplane.io/v1alpha1
                update: environment
                nestedEnvUpdate:
                  hello: world

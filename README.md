@@ -193,6 +193,8 @@ apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
 kind: Context
 data:
   "apiextensions.crossplane.io/environment":
+      kind: Environment
+      apiVersion: internal.crossplane.io/v1alpha1
       update: environment
       nestedEnvUpdate:
         hello: world

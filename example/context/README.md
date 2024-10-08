@@ -47,17 +47,13 @@ fields:
       hello: world
     update: environment
   newkey:
-    apiVersion: internal.crossplane.io/v1alpha1
     hello: world
-    kind: Environment
   other-context-key:
-    apiVersion: internal.crossplane.io/v1alpha1
     complex:
       a: b
       c:
         d: e
         f: "1"
-    kind: Environment
 kind: Context
 ```
 
