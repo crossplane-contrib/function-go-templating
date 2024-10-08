@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
@@ -197,28 +196,20 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 					response.Fatal(rsp, errors.Wrap(err, "cannot get Contexts from input"))
 					return rsp, nil
 				}
-				for key, data := range contextData {
-					val, ok := data.(map[string]interface{})
-					if !ok {
-						response.Fatal(rsp, errors.Errorf("error parsing Context data from %T context key %q. Must be a map.", req, key))
-						return rsp, nil
-					}
-					mergedCtx, err := f.MergeContextKey(key, val, req)
-					if err != nil {
-						response.Fatal(rsp, errors.Wrapf(err, "cannot merge Context"))
-						return rsp, nil
-					}
+				mergedCtx, err := f.MergeContext(req, contextData)
+				if err != nil {
+					response.Fatal(rsp, errors.Wrapf(err, "cannot merge Context"))
+					return rsp, nil
+				}
 
-					if mergedCtx.GroupVersionKind().Empty() {
-						mergedCtx.SetGroupVersionKind(schema.GroupVersionKind{Group: "internal.crossplane.io", Kind: "Environment", Version: "v1alpha1"})
-					}
-					v, err := resource.AsStruct(mergedCtx)
+				for key, v := range mergedCtx {
+					vv, err := structpb.NewValue(v)
 					if err != nil {
-						response.Fatal(rsp, errors.Wrap(err, "cannot convert Context to protobuf Struct well-known type"))
+						response.Fatal(rsp, errors.Wrap(err, "cannot convert value to structpb.Value"))
 						return rsp, nil
 					}
-					f.log.Debug("Updating Composition environment", "key", key, "with data", v)
-					response.SetContextKey(rsp, key, structpb.NewStructValue(v))
+					f.log.Debug("Updating Composition environment", "key", key, "data", v)
+					response.SetContextKey(rsp, key, vv)
 				}
 			case "ExtraResources":
 				// Set extra resources requirements.

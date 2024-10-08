@@ -31,7 +31,7 @@ var (
 
 	metaResourceInvalid        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
 	metaResourceConDet         = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}` // encoded string "value"
-	metaResourceContextInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"new": "value"}}`
+	metaResourceContextInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data": 1 }`
 	metaResourceContext        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"apiextensions.crossplane.io/environment":{ "new":"value"}}}`
 
 	xr                    = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
@@ -627,7 +627,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1beta1.Result{
 						{
 							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
-							Message:  "error parsing Context data from *v1beta1.RunFunctionRequest context key \"new\". Must be a map.",
+							Message:  "cannot get Contexts from input: cannot unmarshal value from JSON: json: cannot unmarshal number into Go value of type map[string]interface {}",
 						},
 					},
 				},
@@ -665,8 +665,6 @@ func TestRunFunction(t *testing.T) {
 					Context: resource.MustStructJSON(
 						`{
 							"apiextensions.crossplane.io/environment": {
-							  "kind": "Environment",
-							  "apiVersion": "internal.crossplane.io/v1alpha1",
 							  "new": "value"
 							}
 						  }`,
