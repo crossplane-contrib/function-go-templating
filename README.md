@@ -204,6 +204,72 @@ data:
 
 For more information, see the example in [context](example/context).
 
+### Updating status or creating composed resources with the composite resource's type
+
+By default this function **does not create composed resources** with the composite resource's type. If a resource with the composite resource's type is found in the template, then only the composite resource's **status is updated**.
+
+For example, the following composition does not create composed resources. Rather, it updates the composite resource's status to include `dummy: cool-status`.
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-update-status
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            status:
+              dummy: cool-status
+```
+
+If necessary, this functionality can be changed so that the function **creates composed resources** with the composite resource's type. To enable this, the `gotemplating.fn.crossplane.io/allow-recursion` meta annotation must be used.
+
+For example, the following composition will create a composed resource:
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-allow-recursion
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            metadata:
+              annotations:
+                "gotemplating.fn.crossplane.io/allow-recursion": "true"
+                {{ setResourceNameAnnotation "recursive-xr" }}
+```
+
+For more information, see the example in [recursive](example/recursive).
+
 ## Additional functions
 
 | Name                                                             | Description                                                  |
