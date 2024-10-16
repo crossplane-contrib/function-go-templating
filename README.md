@@ -267,7 +267,12 @@ spec:
             metadata:
               annotations:
                 {{ setResourceNameAnnotation "recursive-xr" }}
+            spec:
+              compositionRef:
+                name: example-other # make sure to avoid infinite recursion
 ```
+
+> :warning: _Caution: this usage can lead to infinite recursion. Make sure to terminate the recursion by specifying a different `compositionRef` at some point._
 
 For more information, see the example in [recursive](example/recursive).
 

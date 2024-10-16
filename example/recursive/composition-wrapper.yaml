@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: example-recursive
+  name: example-recursive-wrapper # defining the wrapper composition
 spec:
   compositeTypeRef:
     apiVersion: example.crossplane.io/v1beta1
@@ -24,4 +24,8 @@ spec:
             metadata:
               annotations:
                 {{ setResourceNameAnnotation (print "test-xr-" $i) }}
+            spec:
+              compositionRef:
+                name: example-recursive-real # instantiating the real composition
+              region: {{ print "us-west-" (add $i 1) }}
             {{ end }}
