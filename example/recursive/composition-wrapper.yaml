@@ -1,0 +1,31 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-recursive-wrapper # defining the wrapper composition
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- range $i := until ( .observed.composite.resource.spec.count | int ) }}
+            ---
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation (print "test-xr-" $i) }}
+            spec:
+              compositionRef:
+                name: example-recursive-real # instantiating the real composition
+              region: {{ print "us-west-" (add $i 1) }}
+            {{ end }}

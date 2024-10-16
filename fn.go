@@ -153,8 +153,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
-		// Update only the status of the desired composite resource.
-		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() {
+		// Handle if the composite resource appears in the rendered template.
+		// Unless resource name annotation is present, update only the status of the desired composite resource.
+		name, nameFound := obj.GetAnnotations()[annotationKeyCompositionResourceName]
+		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() && !nameFound {
 			dst := make(map[string]any)
 			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
 				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
@@ -251,8 +253,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		meta.RemoveAnnotations(cd.Resource, annotationKeyCompositionResourceName)
 
 		// Add resource to the desired composed resources map.
-		name, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]
-		if !found {
+		if !nameFound {
 			response.Fatal(rsp, errors.Errorf("%q template is missing required %q annotation", obj.GetKind(), annotationKeyCompositionResourceName))
 			return rsp, nil
 		}

@@ -204,6 +204,79 @@ data:
 
 For more information, see the example in [context](example/context).
 
+### Updating status or creating composed resources with the composite resource's type
+
+This function applies special logic if a resource with the composite resource's type is found in the template.
+
+If the resource name is not set (the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation is not present), then the function **does not create composed resources** with the composite resource's type. In this case only the composite resource's **status is updated**.
+
+For example, the following composition does not create composed resources. Rather, it updates the composite resource's status to include `dummy: cool-status`.
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-update-status
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            status:
+              dummy: cool-status
+```
+
+On the other hand, if the resource name is set (using the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation), then the function **creates composed resources** with the composite resource's type.
+
+For example, the following composition will create a composed resource:
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-allow-recursion
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            apiVersion: example.crossplane.io/v1beta1
+            kind: XR
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "recursive-xr" }}
+            spec:
+              compositionRef:
+                name: example-other # make sure to avoid infinite recursion
+```
+
+> [!WARNING]
+> This can lead to infinite recursion. Make sure to terminate the recursion by specifying a different `compositionRef` at some point.
+
+For more information, see the example in [recursive](example/recursive).
+
 ## Additional functions
 
 | Name                                                             | Description                                                  |

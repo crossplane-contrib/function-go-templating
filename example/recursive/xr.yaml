@@ -1,0 +1,8 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  compositionRef:
+    name: example-recursive-wrapper # instantiating the wrapper composition
+  count: 2
