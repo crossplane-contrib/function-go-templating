@@ -23,6 +23,5 @@ spec:
             kind: XR
             metadata:
               annotations:
-                "gotemplating.fn.crossplane.io/allow-recursion": "true"
                 {{ setResourceNameAnnotation (print "test-xr-" $i) }}
             {{ end }}

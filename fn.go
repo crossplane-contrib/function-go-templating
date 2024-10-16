@@ -47,7 +47,6 @@ type Function struct {
 const (
 	annotationKeyCompositionResourceName = "gotemplating.fn.crossplane.io/composition-resource-name"
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
-	annotationKeyAllowRecursion          = "gotemplating.fn.crossplane.io/allow-recursion"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
@@ -155,36 +154,32 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Handle if the composite resource appears in the rendered template.
-		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() {
-			// Allow recursion if requested in meta annotation.
-			if _, found := cd.Resource.GetAnnotations()[annotationKeyAllowRecursion]; found {
-				// Remove meta annotation.
-				meta.RemoveAnnotations(cd.Resource, annotationKeyAllowRecursion)
-			} else { // Otherwise, update only the status of the desired composite resource.
-				dst := make(map[string]any)
-				if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
-					response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
-					return rsp, nil
-				}
-
-				src := make(map[string]any)
-				if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
-					response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
-					return rsp, nil
-				}
-
-				if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
-					response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
-					return rsp, nil
-				}
-
-				if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
-					response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
-					return rsp, nil
-				}
-
-				continue
+		// Unless resource name annotation is present, update only the status of the desired composite resource.
+		name, nameFound := obj.GetAnnotations()[annotationKeyCompositionResourceName]
+		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() && !nameFound {
+			dst := make(map[string]any)
+			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
+				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+				return rsp, nil
 			}
+
+			src := make(map[string]any)
+			if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
+				response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
+				return rsp, nil
+			}
+
+			if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
+				response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
+				return rsp, nil
+			}
+
+			if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
+				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
+				return rsp, nil
+			}
+
+			continue
 		}
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
@@ -258,8 +253,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		meta.RemoveAnnotations(cd.Resource, annotationKeyCompositionResourceName)
 
 		// Add resource to the desired composed resources map.
-		name, found := obj.GetAnnotations()[annotationKeyCompositionResourceName]
-		if !found {
+		if !nameFound {
 			response.Fatal(rsp, errors.Errorf("%q template is missing required %q annotation", obj.GetKind(), annotationKeyCompositionResourceName))
 			return rsp, nil
 		}
