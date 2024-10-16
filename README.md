@@ -238,7 +238,7 @@ spec:
               dummy: cool-status
 ```
 
-On the other hand, if the resource name is set (using the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation), then  the function **creates composed resources** with the composite resource's type.
+On the other hand, if the resource name is set (using the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation), then the function **creates composed resources** with the composite resource's type.
 
 For example, the following composition will create a composed resource:
 
