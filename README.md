@@ -206,7 +206,9 @@ For more information, see the example in [context](example/context).
 
 ### Updating status or creating composed resources with the composite resource's type
 
-By default this function **does not create composed resources** with the composite resource's type. If a resource with the composite resource's type is found in the template, then only the composite resource's **status is updated**.
+This function applies special logic if a resource with the composite resource's type is found in the template.
+
+If the resource name is not set (the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation is not present), then the function **does not create composed resources** with the composite resource's type. In this case only the composite resource's **status is updated**.
 
 For example, the following composition does not create composed resources. Rather, it updates the composite resource's status to include `dummy: cool-status`.
 
@@ -236,7 +238,7 @@ spec:
               dummy: cool-status
 ```
 
-If necessary, this functionality can be changed so that the function **creates composed resources** with the composite resource's type. To enable this, the `gotemplating.fn.crossplane.io/allow-recursion` meta annotation must be used.
+On the other hand, if the resource name is set (using the `gotemplating.fn.crossplane.io/composition-resource-name` meta annotation), then  the function **creates composed resources** with the composite resource's type.
 
 For example, the following composition will create a composed resource:
 
@@ -264,7 +266,6 @@ spec:
             kind: XR
             metadata:
               annotations:
-                "gotemplating.fn.crossplane.io/allow-recursion": "true"
                 {{ setResourceNameAnnotation "recursive-xr" }}
 ```
 
