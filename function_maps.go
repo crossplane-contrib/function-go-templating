@@ -105,6 +105,7 @@ func setResourceNameAnnotation(name string) string {
 }
 
 func initTpl(parent *template.Template, includedNames map[string]int) func(string, any) (string, error) {
+	//see https://github.com/helm/helm/blob/261233caec499c18602c61ac32507fa4656ebc9b/pkg/engine/engine.go#L148
 	return func(tpl string, vals interface{}) (string, error) {
 		t, err := parent.Clone()
 		t.Option("missingkey=zero")
@@ -112,20 +113,11 @@ func initTpl(parent *template.Template, includedNames map[string]int) func(strin
 			return "", errors.Wrapf(err, "cannot clone template")
 		}
 
-		// Re-inject 'include' so that it can close over our clone of t;
-		// this lets any 'define's inside tpl be 'include'd.
 		t.Funcs(template.FuncMap{
-			// "include": includeFun(t, includedNames),
 			"include": initInclude(t, includedNames),
 			"tpl":     initTpl(t, includedNames),
 		})
 
-		// We need a .New template, as template text which is just blanks
-		// or comments after parsing out defines just adds new named
-		// template definitions without changing the main template.
-		// https://pkg.go.dev/text/template#Template.Parse
-		// Use the parent's name for lack of a better way to identify the tpl
-		// text string. (Maybe we could use a hash appended to the name?)
 		t, err = t.New(parent.Name()).Parse(tpl)
 		if err != nil {
 			return "", errors.Wrapf(err, "cannot parse template %q", tpl)
@@ -136,7 +128,6 @@ func initTpl(parent *template.Template, includedNames map[string]int) func(strin
 			return "", errors.Wrapf(err, "error during tpl function execution for %q", tpl)
 		}
 
-		// See comment in renderWithReferences explaining the <no value> hack.
 		return strings.ReplaceAll(buf.String(), "<no value>", ""), nil
 	}
 }
