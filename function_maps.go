@@ -114,7 +114,7 @@ func initInclude(t *template.Template) func(string, interface{}) (string, error)
 
 func getComposedResource(req map[string]any, name string) map[string]any {
 	var cr map[string]any
-	path := fmt.Sprintf("observed.resources.%s.resource", name)
+	path := fmt.Sprintf("observed.resources[%s]resource", name)
 	if err := fieldpath.Pave(req).GetValueInto(path, &cr); err != nil {
 		return nil
 	}
