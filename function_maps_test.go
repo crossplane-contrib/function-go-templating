@@ -375,6 +375,22 @@ func Test_getComposedResource(t *testing.T) {
 			},
 			want: want{rsp: completeResource},
 		},
+		"RetrieveCompleteResourceWithDots": {
+			reason: "Should successfully retrieve the complete resource when identifier contains dots",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"flex.server": map[string]any{
+								"resource": completeResource,
+							},
+						},
+					},
+				},
+				name: "flex.server",
+			},
+			want: want{rsp: completeResource},
+		},
 		"ResourceNotFound": {
 			reason: "Should return nil if the resource is not found",
 			args: args{
