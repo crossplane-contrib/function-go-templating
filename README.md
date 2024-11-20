@@ -290,6 +290,12 @@ For more information, see the example in [recursive](example/recursive).
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
 | [`include`](example/functions/include)                           | Outputs template as a string                                 |
 
+## Additional variables
+
+| Name | Description                                                                                     |
+| ---- | ----------------------------------------------------------------------------------------------- |
+| `$`  | As for Helm, the `$` variable will always point to the root context, thus the function request. |
+
 ## Developing this function
 
 This function uses [Go][go], [Docker][docker], and the [Crossplane CLI][cli] to

@@ -23,6 +23,7 @@ import (
 var (
 	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
 	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
+	cdTmplWithDollar      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{ $.observed.composite.resource.metadata.name|quote}}}}}`
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
@@ -287,6 +288,44 @@ func TestRunFunction(t *testing.T) {
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
+						}),
+					Observed: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1beta1.RunFunctionResponse{
+					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1beta1.State{
+						Composite: &fnv1beta1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1beta1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"ResponseIsReturnedWithTemplatingFromGlobalContext": {
+			reason: "The Function should be able to template by accessing the global context from the dollar variable.",
+			args: args{
+				req: &fnv1beta1.RunFunctionRequest{
+					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdTmplWithDollar},
 						}),
 					Observed: &fnv1beta1.State{
 						Composite: &fnv1beta1.Resource{

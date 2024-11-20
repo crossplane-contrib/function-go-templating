@@ -49,6 +49,8 @@ const (
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
+
+	itemDollar = "$"
 )
 
 // RunFunction runs the Function.
@@ -82,6 +84,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 		response.Fatal(rsp, errors.Wrap(err, "cannot convert request to map"))
 		return rsp, nil
 	}
+	reqMap[itemDollar] = &reqMap
 
 	f.log.Debug("constructed request map", "request", reqMap)
 
