@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: go-template-context.example.crossplane.io
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+  - step: go-templating-update-conditions
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Inline
+      inline:
+        template: |
+          ---
+          apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+          kind: ClaimConditions
+          conditions:
+          # Type of the condition, e.g. DatabaseReady.
+          # 'Healthy', 'Ready' and 'Synced' are reserved for use by Crossplane and this function will raise an error if used
+          # - type:  
+          # Status of the condition.
+          #   status:
+          # Machine-readable PascalCase reason.
+          #   reason:
+          # Optional Target. Publish Condition only to the Composite, or the Composite and the Claim. 
+          # Defaults to CompositeAndClaim
+          #   target: 
+          - type: TestCondition
+            status: "False"
+            reason: InstallFail
+            message: "failed to install"
+          - type: ConditionTrue
+            status: "True"
+            reason: this condition is true 
+            message: we are true
+            target: Composite
+          - type: DatabaseReady
+            status: "True"
+            reason: Ready
+            message: Database is ready
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready

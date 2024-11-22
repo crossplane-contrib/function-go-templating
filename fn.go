@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
+	xpruntimev1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
@@ -191,6 +192,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				for k, v := range con {
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
 					desiredComposite.ConnectionDetails[k] = d
+				}
+			case "ClaimConditions":
+				var conditions []xpruntimev1.Condition
+				if err = cd.Resource.GetValueInto("conditions", &conditions); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get Conditions from input"))
+					return rsp, nil
+				}
+				rsp, err := UpdateClaimConditions(rsp, conditions...)
+				if err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot set ClaimCondition"))
+					return rsp, nil
 				}
 			case "Context":
 				contextData := make(map[string]interface{})
