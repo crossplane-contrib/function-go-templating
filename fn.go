@@ -20,7 +20,7 @@ import (
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
@@ -38,7 +38,7 @@ func (*osFS) Open(name string) (fs.File, error) {
 
 // Function uses Go templates to compose resources.
 type Function struct {
-	fnv1beta1.UnimplementedFunctionRunnerServiceServer
+	fnv1.UnimplementedFunctionRunnerServiceServer
 
 	log  logging.Logger
 	fsys fs.FS
@@ -52,7 +52,7 @@ const (
 )
 
 // RunFunction runs the Function.
-func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequest) (*fnv1beta1.RunFunctionResponse, error) {
+func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
 
 	rsp := response.To(req, response.DefaultTTL)
@@ -145,7 +145,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1beta1.Requirements{ExtraResources: make(map[string]*fnv1beta1.ResourceSelector)}
+	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
 
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
@@ -283,7 +283,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1beta1.RunFunctionRequ
 	return rsp, nil
 }
 
-func convertToMap(req *fnv1beta1.RunFunctionRequest) (map[string]any, error) {
+func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	jReq, err := protojson.Marshal(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot marshal request from proto to json")
