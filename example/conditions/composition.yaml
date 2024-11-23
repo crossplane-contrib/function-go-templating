@@ -35,6 +35,7 @@ spec:
             status: "False"
             reason: InstallFail
             message: "failed to install"
+            target: ClaimAndComposite
           - type: ConditionTrue
             status: "True"
             reason: this condition is true 

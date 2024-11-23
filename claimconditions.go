@@ -1,7 +1,6 @@
 package main
 
 import (
-	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
@@ -28,7 +27,7 @@ const (
 // UpdateClaimConditions updates Conditions in the Claim and Composite
 func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...TargetedCondition) (*fnv1.RunFunctionResponse, error) {
 	for _, c := range conditions {
-		if xpv1.IsSystemConditionType(v1.ConditionType(c.Type)) {
+		if xpv1.IsSystemConditionType(xpv1.ConditionType(c.Type)) {
 			response.Fatal(rsp, errors.Errorf("cannot set ClaimCondition type: %s is a reserved Crossplane Condition", c.Type))
 			return rsp, nil
 		}

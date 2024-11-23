@@ -1,6 +1,6 @@
-# Writing to the Function Context
+# Writing to the Composite or Claim Status
 
-function-go-templating can write to the Function Context
+function-go-templating can write to the Composite or Claim Status. See [Communication Between Composition Functions and the Claim](https://github.com/crossplane/crossplane/blob/main/design/one-pager-fn-claim-conditions.md) for more information.
 
 ## Testing This Function Locally
 
@@ -9,52 +9,7 @@ with these example manifests.
 
 ```shell
 crossplane render \
-  --extra-resources environmentConfigs.yaml \
-  --include-context \
   xr.yaml composition.yaml functions.yaml
-```
-
-Will produce an output like:
-
-```shell
----
-apiVersion: example.crossplane.io/v1
-kind: XR
-metadata:
-  name: example-xr
-status:
-  conditions:
-  - lastTransitionTime: "2024-01-01T00:00:00Z"
-    reason: Available
-    status: "True"
-    type: Ready
-  fromEnv: e
----
-apiVersion: render.crossplane.io/v1beta1
-fields:
-  apiextensions.crossplane.io/environment:
-    apiVersion: internal.crossplane.io/v1alpha1
-    array:
-    - "1"
-    - "2"
-    complex:
-      a: b
-      c:
-        d: e
-        f: "1"
-    kind: Environment
-    nestedEnvUpdate:
-      hello: world
-    update: environment
-  newkey:
-    hello: world
-  other-context-key:
-    complex:
-      a: b
-      c:
-        d: e
-        f: "1"
-kind: Context
 ```
 
 ## Debugging This Function
@@ -77,7 +32,7 @@ metadata:
   annotations: 
     render.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.6.0
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.9.0
 ```
 
 While the function is running in one terminal, open another terminal window and run `crossplane render`.
