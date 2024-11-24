@@ -25,16 +25,19 @@ const (
 )
 
 // UpdateClaimConditions updates Conditions in the Claim and Composite
-func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...TargetedCondition) (*fnv1.RunFunctionResponse, error) {
+func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...TargetedCondition) error {
+	if rsp == nil {
+		return nil
+	}
 	for _, c := range conditions {
 		if xpv1.IsSystemConditionType(xpv1.ConditionType(c.Type)) {
 			response.Fatal(rsp, errors.Errorf("cannot set ClaimCondition type: %s is a reserved Crossplane Condition", c.Type))
-			return rsp, nil
+			return errors.New("error updating response")
 		}
 		co := transformCondition(c)
 		UpdateResponseWithCondition(rsp, co)
 	}
-	return rsp, nil
+	return nil
 }
 
 // transformCondition converts a TargetedCondition to be compatible with the Protobuf SDK
@@ -71,9 +74,15 @@ func transformTarget(ct CompositionTarget) *fnv1.Target {
 	return fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum()
 }
 
+// UpdateResponseWithCondition updates the RunFunctionResponse with a Condition
 func UpdateResponseWithCondition(rsp *fnv1.RunFunctionResponse, c *fnv1.Condition) {
+	if rsp == nil {
+		return
+	}
 	if rsp.GetConditions() == nil {
 		rsp.Conditions = make([]*fnv1.Condition, 0, 1)
 	}
-	rsp.Conditions = append(rsp.GetConditions(), c)
+	if c != nil {
+		rsp.Conditions = append(rsp.GetConditions(), c)
+	}
 }

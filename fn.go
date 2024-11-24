@@ -198,9 +198,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					response.Fatal(rsp, errors.Wrap(err, "cannot get Conditions from input"))
 					return rsp, nil
 				}
-				rsp, err := UpdateClaimConditions(rsp, conditions...)
+				err := UpdateClaimConditions(rsp, conditions...)
 				if err != nil {
-					response.Fatal(rsp, errors.Wrap(err, "cannot set ClaimCondition"))
 					return rsp, nil
 				}
 				f.log.Debug("updating ClaimConditions", "conditions", rsp.Conditions)
