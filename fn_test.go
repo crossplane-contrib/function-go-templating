@@ -683,7 +683,7 @@ func TestRunFunction(t *testing.T) {
 							Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 							Reason:  "InstallFail",
 							Message: ptr.To("failed to install"),
-							Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 						{
 							Type:    "ConditionTrue",
@@ -697,7 +697,7 @@ func TestRunFunction(t *testing.T) {
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Reason:  "Ready",
 							Message: ptr.To("Database is ready"),
-							Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},

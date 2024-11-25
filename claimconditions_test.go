@@ -109,7 +109,7 @@ func Test_UpdateClaimConditions(t *testing.T) {
 						{
 							Message: ptr.To("No Target should add CompositeAndClaim"),
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
-							Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 							Type:    "NoTarget",
 						},
 					},
@@ -168,7 +168,7 @@ func Test_transformCondition(t *testing.T) {
 			},
 			want: &fnv1.Condition{
 				Status: fnv1.Status_STATUS_CONDITION_UNKNOWN,
-				Target: fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+				Target: fnv1.Target_TARGET_COMPOSITE.Enum(),
 			},
 		},
 		"StatusFalseNoTarget": {
@@ -185,7 +185,7 @@ func Test_transformCondition(t *testing.T) {
 			want: &fnv1.Condition{
 				Message: ptr.To("Basic Message"),
 				Status:  fnv1.Status_STATUS_CONDITION_FALSE,
-				Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+				Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 				Type:    "TestType",
 			},
 		},
@@ -208,12 +208,12 @@ func Test_transformTarget(t *testing.T) {
 		args   args
 		want   *fnv1.Target
 	}{
-		"DefaultToCompositeAndClaim": {
-			reason: "unknown target will default to CompositeAndClaim",
+		"DefaultToComposite": {
+			reason: "unknown target will default to Composite",
 			args: args{
 				ct: "COMPOSE",
 			},
-			want: fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
+			want: fnv1.Target_TARGET_COMPOSITE.Enum(),
 		},
 		"Composite": {
 			reason: "Composite target correctly set",

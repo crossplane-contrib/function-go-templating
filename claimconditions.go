@@ -66,12 +66,12 @@ func transformCondition(tc TargetedCondition) *fnv1.Condition {
 }
 
 // transformTarget converts the input into a target Go SDK Enum
-// Default to TARGET_COMPOSITE_AND_CLAIM
+// Default to TARGET_COMPOSITE
 func transformTarget(ct CompositionTarget) *fnv1.Target {
-	if ct == CompositionTargetComposite {
-		return fnv1.Target_TARGET_COMPOSITE.Enum()
+	if ct == CompositionTargetCompositeAndClaim {
+		return fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum().Enum()
 	}
-	return fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum()
+	return fnv1.Target_TARGET_COMPOSITE.Enum()
 }
 
 // UpdateResponseWithCondition updates the RunFunctionResponse with a Condition
