@@ -27,7 +27,7 @@ spec:
           # - type:  
           # Status of the condition. String of "True"/"False"/"Unknown"
           #   status:
-          # Machine-readable PascalCase reason, for example "DatabaseReady"
+          # Machine-readable PascalCase reason, for example "ErrorProvisioning"
           #   reason:
           # Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim). 
           # Defaults to Composite
@@ -41,13 +41,14 @@ spec:
             target: CompositeAndClaim
           - type: ConditionTrue
             status: "True"
-            reason: this condition is true 
+            reason: TrueCondition 
             message: we are true
             target: Composite
           - type: DatabaseReady
             status: "True"
             reason: Ready
             message: Database is ready
+            target: CompositeAndClaim
   - step: automatically-detect-ready-composed-resources
     functionRef:
       name: crossplane-contrib-function-auto-ready

@@ -277,6 +277,47 @@ spec:
 
 For more information, see the example in [recursive](example/recursive).
 
+## Setting Conditions on the Claim and Composite
+
+Starting with Crossplane 1.17, Composition authors can set custom Conditions on the
+Composite and the Claim.
+
+Add a `ClaimConditions` to your template to set Conditions:
+
+```yaml
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: ClaimConditions
+conditions:
+# Guide to ClaimConditions fields:
+# Type of the condition, e.g. DatabaseReady.
+# 'Healthy', 'Ready' and 'Synced' are reserved for use by Crossplane and this function will raise an error if used
+# - type:  
+# Status of the condition. String of "True"/"False"/"Unknown"
+#   status:
+# Machine-readable PascalCase reason, for example "ErrorProvisioning"
+#   reason:
+# Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim). 
+# Defaults to Composite
+#   target: 
+# Optional message:
+#   message: 
+- type: TestCondition
+  status: "False"
+  reason: InstallFail
+  message: "failed to install"
+  target: CompositeAndClaim
+- type: ConditionTrue
+  status: "True"
+  reason: TrueCondition 
+  message: we are true
+  target: Composite
+- type: DatabaseReady
+  status: "True"
+  reason: Ready
+  message: Database is ready
+  target: CompositeAndClaim
+```
+
 ## Additional functions
 
 | Name                                                             | Description                                                  |
