@@ -13,7 +13,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
 
@@ -56,10 +56,10 @@ var (
 func TestRunFunction(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *fnv1beta1.RunFunctionRequest
+		req *fnv1.RunFunctionRequest
 	}
 	type want struct {
-		rsp *fnv1beta1.RunFunctionResponse
+		rsp *fnv1.RunFunctionResponse
 		err error
 	}
 
@@ -71,7 +71,7 @@ func TestRunFunction(t *testing.T) {
 		"WrongInputSourceType": {
 			reason: "The Function should return a fatal result if the cd source type is wrong",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: "wrong",
@@ -79,12 +79,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: invalid source: wrong",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -93,15 +94,16 @@ func TestRunFunction(t *testing.T) {
 		"NoInput": {
 			reason: "The Function should return a fatal result if no cd was specified",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{},
+				req: &fnv1.RunFunctionRequest{},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: source is required",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -110,7 +112,7 @@ func TestRunFunction(t *testing.T) {
 		"WrongInlineInput": {
 			reason: "The Function should return a fatal result if there is no inline template provided",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
@@ -118,12 +120,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: inline.template should be provided",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -131,7 +134,7 @@ func TestRunFunction(t *testing.T) {
 		},
 		"WrongFileSystemInput": {
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.FileSystemSource,
@@ -139,12 +142,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: fileSystem.dirPath should be provided",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -153,7 +157,7 @@ func TestRunFunction(t *testing.T) {
 		"NoResourceNameAnnotation": {
 			reason: "The Function should return a fatal result if the cd does not have a composition-resource-name annotation",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
@@ -162,12 +166,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "\"CD\" template is missing required \"" + annotationKeyCompositionResourceName + "\" annotation",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -176,7 +181,7 @@ func TestRunFunction(t *testing.T) {
 		"CannotDecodeManifest": {
 			reason: "The Function should return a fatal result if the manifest cannot be decoded",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
@@ -185,12 +190,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  fmt.Sprintf("cannot decode manifest: Object 'Kind' is missing in '%s'", cdMissingKind),
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -199,36 +205,37 @@ func TestRunFunction(t *testing.T) {
 		"CannotParseTemplate": {
 			reason: "The Function should return a fatal result if the template cannot be parsed",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdWrongTmpl},
 						},
 					),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: cannot parse the provided templates: template: manifests:1: bad character U+002D '-'",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
@@ -238,23 +245,23 @@ func TestRunFunction(t *testing.T) {
 		"ResponseIsReturnedWithNoChange": {
 			reason: "The Function should return the desired composite resource and cd composed resource without any changes.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "nochange"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "nochange"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cd},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},
@@ -263,13 +270,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "nochange", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "nochange", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd"}}`),
 							},
@@ -281,33 +288,33 @@ func TestRunFunction(t *testing.T) {
 		"ResponseIsReturnedWithTemplating": {
 			reason: "The Function should return the desired composite resource and the templated composed resources.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
@@ -319,30 +326,30 @@ func TestRunFunction(t *testing.T) {
 		"UpdateDesiredCompositeStatus": {
 			reason: "The Function should update the desired composite resource status.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: xrWithStatus},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xrWithStatus),
 						},
 					},
@@ -352,30 +359,30 @@ func TestRunFunction(t *testing.T) {
 		"UpdateDesiredCompositeNestedStatus": {
 			reason: "The Function should update the desired composite resource nested status.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: xrWithNestedStatusBaz},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xrWithNestedStatusFoo),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xrWithNestedStatusFoo),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar","baz":"qux"}}}`),
 						},
 					},
@@ -385,33 +392,33 @@ func TestRunFunction(t *testing.T) {
 		"ResponseIsReturnedWithTemplatedXR": {
 			reason: "The Function should return the desired composite resource and the composed templated XR resource.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "status"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "status"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: xrRecursiveTmpl},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "status", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"recursive-xr": {
 								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"XR","metadata":{"annotations":{},"name":"recursive-xr","labels":{"belongsTo":"cool-xr"}},"spec":{"count":2}}`),
 							},
@@ -423,33 +430,33 @@ func TestRunFunction(t *testing.T) {
 		"ResponseIsReturnedWithTemplatingFS": {
 			reason: "The Function should return the desired composite resource and the templated composed resources with FileSystem cd.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
-					Meta: &fnv1beta1.RequestMeta{Tag: "templates"},
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source:     v1beta1.FileSystemSource,
 							FileSystem: &v1beta1.TemplateSourceFileSystem{DirPath: path},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
@@ -461,7 +468,7 @@ func TestRunFunction(t *testing.T) {
 		"CannotReadTemplatesFromFS": {
 			reason: "The Function should return a fatal result if the templates cannot be read from the filesystem.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source:     v1beta1.FileSystemSource,
@@ -471,12 +478,13 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: open testdata/wrong: file does not exist",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -485,35 +493,36 @@ func TestRunFunction(t *testing.T) {
 		"ReadyStatusAnnotationNotValid": {
 			reason: "The Function should return a fatal result if the ready annotation is not valid.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdWithReadyWrong},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: invalid \"" + annotationKeyReady + "\" annotation value \"wrongValue\": must be True, False, or Unspecified",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
@@ -523,37 +532,37 @@ func TestRunFunction(t *testing.T) {
 		"ReadyStatusAnnotation": {
 			reason: "The Function should return desired composed resource with True ready state.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdWithReadyTrue},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd"}}`),
 								Ready:    1,
@@ -566,35 +575,36 @@ func TestRunFunction(t *testing.T) {
 		"InvalidMetaKind": {
 			reason: "The Function should return a fatal result if the meta kind is invalid.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceInvalid},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be one of CompositeConnectionDetails, Context or ExtraResources",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
@@ -604,29 +614,29 @@ func TestRunFunction(t *testing.T) {
 		"CompositeConnectionDetails": {
 			reason: "The Function should return the desired composite with CompositeConnectionDetails.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDet},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource:          resource.MustStructJSON(xr),
 							ConnectionDetails: map[string][]byte{"key": []byte("value")},
 						},
@@ -637,36 +647,37 @@ func TestRunFunction(t *testing.T) {
 		"ContextInvalidData": {
 			reason: "The Function should return an error if he context data is invalid.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceContextInvalid},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Results: []*fnv1beta1.Result{
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "cannot get Contexts from input: cannot unmarshal value from JSON: json: cannot unmarshal number into Go value of type map[string]interface {}",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
@@ -675,29 +686,29 @@ func TestRunFunction(t *testing.T) {
 		"Context": {
 			reason: "The Function should return the desired composite with updated context.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceContext},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
@@ -714,22 +725,22 @@ func TestRunFunction(t *testing.T) {
 		"ExtraResources": {
 			reason: "The Function should return the desired composite with extra resources.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: extraResources},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},
@@ -738,23 +749,23 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta:    &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{},
-					Requirements: &fnv1beta1.Requirements{
-						ExtraResources: map[string]*fnv1beta1.ResourceSelector{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
-								Match: &fnv1beta1.ResourceSelector_MatchName{
+								Match: &fnv1.ResourceSelector_MatchName{
 									MatchName: "cool-extra-resource",
 								},
 							},
 							"another-cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
-								Match: &fnv1beta1.ResourceSelector_MatchLabels{
-									MatchLabels: &fnv1beta1.MatchLabels{
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
 										Labels: map[string]string{"key": "value"},
 									},
 								},
@@ -762,26 +773,26 @@ func TestRunFunction(t *testing.T) {
 							"yet-another-cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
-								Match: &fnv1beta1.ResourceSelector_MatchName{
+								Match: &fnv1.ResourceSelector_MatchName{
 									MatchName: "foo",
 								},
 							},
 							"all-cool-resources": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
-								Match: &fnv1beta1.ResourceSelector_MatchLabels{
-									MatchLabels: &fnv1beta1.MatchLabels{
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
 										Labels: map[string]string{},
 									},
 								},
 							},
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},
@@ -793,22 +804,22 @@ func TestRunFunction(t *testing.T) {
 		"DuplicateExtraResourceKey": {
 			reason: "The Function should return a fatal result if the extra resource key is duplicated.",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: extraResourcesDuplicatedKey},
 						}),
-					Observed: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},
@@ -817,19 +828,20 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: &fnv1beta1.RunFunctionResponse{
-					Meta: &fnv1beta1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
-					Results: []*fnv1beta1.Result{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
 						{
-							Severity: fnv1beta1.Severity_SEVERITY_FATAL,
+							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "duplicate extra resource key \"cool-extra-resource\"",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
-					Desired: &fnv1beta1.State{
-						Composite: &fnv1beta1.Resource{
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
 						},
-						Resources: map[string]*fnv1beta1.Resource{
+						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
 							},

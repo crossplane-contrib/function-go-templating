@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	fnv1beta1 "github.com/crossplane/function-sdk-go/proto/v1beta1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -14,7 +14,7 @@ import (
 func TestMergeContext(t *testing.T) {
 	type args struct {
 		val map[string]interface{}
-		req *fnv1beta1.RunFunctionRequest
+		req *fnv1.RunFunctionRequest
 	}
 	type want struct {
 		us  map[string]any
@@ -29,7 +29,7 @@ func TestMergeContext(t *testing.T) {
 		"NoContextAtKey": {
 			reason: "When there is no existing context data at the key to merge, return the value",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Context: nil,
 				},
 				val: map[string]interface{}{"hello": "world"},
@@ -42,7 +42,7 @@ func TestMergeContext(t *testing.T) {
 		"SuccessfulMerge": {
 			reason: "Confirm that keys are merged with source overwriting destination",
 			args: args{
-				req: &fnv1beta1.RunFunctionRequest{
+				req: &fnv1.RunFunctionRequest{
 					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment":{"complex":{"a":"b","c":{"d":"e","f":"1","overWrite": "fromContext"}}}}`),
 				},
 				val: map[string]interface{}{
