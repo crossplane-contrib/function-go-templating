@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 
@@ -39,6 +40,9 @@ var (
 	xrWithNestedStatusFoo = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"}}}`
 	xrWithNestedStatusBaz = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
 	xrRecursiveTmpl       = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"recursive-xr"},"name":"recursive-xr","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}},"spec":{"count":2}}`
+
+	claimConditions            = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"TestCondition","status":"False","reason":"InstallFail","message":"failed to install","target":"ClaimAndComposite"},{"type":"ConditionTrue","status":"True","reason":"this condition is true","message":"we are true","target":"Composite"},{"type":"DatabaseReady","status":"True","reason":"Ready","message":"Database is ready"}]}`
+	claimConditionsReservedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"Ready","status":"False","reason":"InstallFail","message":"I am using a reserved Condition","target":"ClaimAndComposite"}]}`
 
 	extraResources = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{"key": "value"}},"yet-another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"foo"}}}
@@ -603,6 +607,100 @@ func TestRunFunction(t *testing.T) {
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"ClaimConditionsError": {
+			reason: "The Function should return a fatal result if a reserved Condition is set.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: claimConditionsReservedKey},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot set ClaimCondition type: Ready is a reserved Crossplane Condition",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"ClaimConditions": {
+			reason: "The Function should correctly set ClaimConditions.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: claimConditions},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Conditions: []*fnv1.Condition{
+						{
+							Type:    "TestCondition",
+							Status:  fnv1.Status_STATUS_CONDITION_FALSE,
+							Reason:  "InstallFail",
+							Message: ptr.To("failed to install"),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+						{
+							Type:    "ConditionTrue",
+							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
+							Reason:  "this condition is true",
+							Message: ptr.To("we are true"),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+						{
+							Type:    "DatabaseReady",
+							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
+							Reason:  "Ready",
+							Message: ptr.To("Database is ready"),
+							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),

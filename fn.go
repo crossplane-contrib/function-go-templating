@@ -192,6 +192,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
 					desiredComposite.ConnectionDetails[k] = d
 				}
+			case "ClaimConditions":
+				var conditions []TargetedCondition
+				if err = cd.Resource.GetValueInto("conditions", &conditions); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get Conditions from input"))
+					return rsp, nil
+				}
+				err := UpdateClaimConditions(rsp, conditions...)
+				if err != nil {
+					return rsp, nil
+				}
+				f.log.Debug("updating ClaimConditions", "conditions", rsp.Conditions)
 			case "Context":
 				contextData := make(map[string]interface{})
 				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
