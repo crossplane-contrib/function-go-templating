@@ -11,7 +11,7 @@ kind: Function
 metadata:
   name: function-go-templating
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.8.0
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.9.0
   runtimeConfigRef:
     name: mount-templates
 ---
