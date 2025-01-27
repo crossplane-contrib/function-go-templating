@@ -12,7 +12,10 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
 const recursionMaxNums = 1000
@@ -27,6 +30,7 @@ var funcMaps = []template.FuncMap{
 		"getComposedResource":       getComposedResource,
 		"getCompositeResource":      getCompositeResource,
 		"getExtraResources":         getExtraResources,
+		"getCredentialData":         getCredentialData,
 	},
 }
 
@@ -142,4 +146,35 @@ func getExtraResources(req map[string]any, name string) []any {
 	}
 
 	return ers
+}
+
+func getCredentialData(mReq map[string]any, credName string) map[string][]byte {
+	req, err := convertFromMap(mReq)
+	if err != nil {
+		return nil
+	}
+
+	var data map[string][]byte
+	switch req.GetCredentials()[credName].GetSource().(type) {
+	case *fnv1.Credentials_CredentialData:
+		data = req.GetCredentials()[credName].GetCredentialData().GetData()
+	default:
+		return nil
+	}
+
+	return data
+}
+
+func convertFromMap(mReq map[string]any) (*fnv1.RunFunctionRequest, error) {
+	jReq, err := json.Marshal(&mReq)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot marshal map[string]any to json")
+	}
+
+	req := &fnv1.RunFunctionRequest{}
+	if err := protojson.Unmarshal(jReq, req); err != nil {
+		return nil, errors.Wrap(err, "cannot unmarshal request from json to proto")
+	}
+
+	return req, nil
 }
