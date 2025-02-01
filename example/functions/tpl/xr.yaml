@@ -1,0 +1,9 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  labels:
+    key1: value1
+    key2: "{{ .val2 }}"
+  val2: value2
