@@ -104,7 +104,7 @@ the Crossplane CLI:
 $ crossplane render xr.yaml composition.yaml functions.yaml
 ```
 
-See the [composition functions documentation][docs-functions] to learn more
+See the [composition functions documentation][docs-functions-testing] to learn more
 about `crossplane render`.
 
 ### ExtraResources
