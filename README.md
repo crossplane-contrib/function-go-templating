@@ -101,11 +101,11 @@ See the [example](example) directory for examples that you can run locally using
 the Crossplane CLI:
 
 ```shell
-$ crossplane beta render xr.yaml composition.yaml functions.yaml
+$ crossplane render xr.yaml composition.yaml functions.yaml
 ```
 
 See the [composition functions documentation][docs-functions] to learn more
-about `crossplane beta render`.
+about `crossplane render`.
 
 ### ExtraResources
 
@@ -350,7 +350,8 @@ $ docker build . --tag=runtime
 $ crossplane xpkg build -f package --embed-runtime-image=runtime
 ```
 
-[docs-functions]: https://docs.crossplane.io/v1.14/concepts/composition-functions/
+[docs-functions]: https://docs.crossplane.io/latest/concepts/compositions/#create-a-composition
+[docs-functions-testing]: https://docs.crossplane.io/latest/concepts/compositions/#test-a-composition
 [go-templates]: https://pkg.go.dev/text/template
 [helm-chart]: https://helm.sh/docs/chart_template_guide/getting_started/
 [bsr]: https://buf.build/crossplane/crossplane/docs/main:apiextensions.fn.proto.v1beta1#apiextensions.fn.proto.v1beta1.RunFunctionRequest
