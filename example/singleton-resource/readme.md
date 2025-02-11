@@ -3,8 +3,9 @@
 ## Overview  
 This mechanism leverages Crossplane Composition, Go templating, and management policies to dynamically determine whether a cloud resource should be observed (imported) or created (managed). It uses Crossplane's ExtraResources feature, a powerful Go templating capability, to check if a requested resource already exists in the cloud and handle it accordingly.
 
-1. **Imported (Observed Only)** if it already exists in the cloud.  
-2. **Created and Managed** if it does not exist.  
+1. **ExtraResources** fetch MR information
+2. **Imported (Observed Only)** if it already exists in the cloud.  
+3. **Created and Managed** if it does not exist.  
 
 The mechanism leverages **Crossplane Composition** and **management policies** to determine whether the resource should be observed or created.  
 
