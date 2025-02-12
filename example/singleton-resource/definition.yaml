@@ -1,0 +1,43 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xsingletonresources.example.crossplane.io
+spec:
+  group: example.crossplane.io
+  defaultCompositeDeletePolicy: Foreground
+  names:
+    kind: XSingletonResource
+    plural: xsingletonresources
+    singular: xsingletonresource
+  claimNames:
+    kind: SingletonResource
+    plural: singletonresources
+    singular: singletonresource
+  versions:
+    - name: v1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - resource
+              properties:
+                resource:
+                  description: Freeform field for resource
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+            status:
+              description: XRStatus defines the observed state of XR.
+              type: object
+              properties:
+                externalResourceStatus:
+                  type: string
+                  description: status of the resource
+                externalName:
+                  type: string
+                  description: external name of the MR
