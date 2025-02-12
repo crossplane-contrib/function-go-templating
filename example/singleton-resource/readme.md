@@ -56,7 +56,7 @@ For each `extraResource`:
 
 ---
 
-### 3️⃣ Handling the Resource Based on Readiness  
+### 3️⃣ Handling the Resource Based on Readiness
 
 #### ✅ **Case 1: Resource Already Exists**  
 If `$readyStatus` is `true`:  
