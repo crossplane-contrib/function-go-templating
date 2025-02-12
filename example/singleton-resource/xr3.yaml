@@ -1,0 +1,16 @@
+---
+apiVersion: example.crossplane.io/v1
+kind: XSingletonResource
+metadata:
+  name: example-xr3
+spec:
+  resource:
+    apiVersion: azure.upbound.io/v1beta1
+    kind: ResourceGroup
+    metadata:
+      name: testrg
+    spec:
+      forProvider:
+        location: West Europe
+      providerConfigRef:
+        name: default
