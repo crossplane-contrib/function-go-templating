@@ -53,7 +53,7 @@ const (
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
+	f.log.Debug("Running Function", "tag", req.GetMeta().GetTag())
 
 	rsp := response.To(req, response.DefaultTTL)
 
@@ -289,7 +289,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		rsp.Requirements = requirements
 	}
 
-	f.log.Info("Successfully composed desired resources", "source", in.Source, "count", len(objs))
+	f.log.Debug("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil
 }
