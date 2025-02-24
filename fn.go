@@ -30,6 +30,8 @@ import (
 	"github.com/crossplane/function-sdk-go/response"
 )
 
+var defaultSource = os.Getenv("FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE")
+
 // osFS is a dead-simple implementation of [io/fs.FS] that just wraps around
 // [os.Open].
 type osFS struct{}
@@ -70,6 +72,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	if err := request.GetInput(req, in); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
+	}
+	if in.Source == "" && defaultSource != "" {
+		in.Source = v1beta1.FileSystemSource
+		in.FileSystem = &v1beta1.TemplateSourceFileSystem{
+			DirPath: defaultSource,
+		}
 	}
 
 	tg, err := NewTemplateSourceGetter(f.fsys, req.GetContext(), in)

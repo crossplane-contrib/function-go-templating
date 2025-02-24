@@ -77,8 +77,9 @@ metadata:
 
 func TestRunFunction(t *testing.T) {
 	type args struct {
-		ctx context.Context
-		req *fnv1.RunFunctionRequest
+		ctx           context.Context
+		req           *fnv1.RunFunctionRequest
+		defaultSource string
 	}
 	type want struct {
 		rsp *fnv1.RunFunctionResponse
@@ -192,6 +193,28 @@ func TestRunFunction(t *testing.T) {
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: environment.key should be provided",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"DefaultSourceDoesNotExist": {
+			// We can't easily inject a filesystem with valid input into the
+			// test, so just make sure the default source is used and assume it
+			// would work properly if it pointed to something valid.
+			reason: "The default source should be used if specified when the input is empty",
+			args: args{
+				req:           &fnv1.RunFunctionRequest{},
+				defaultSource: "does/not/exist",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: cannot read tmpl from the folder {does/not/exist}: open does/not/exist: file does not exist",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1716,6 +1739,9 @@ func TestRunFunction(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			// NOTE: This means we can't run tests in parallel.
+			defaultSource = tc.args.defaultSource
+
 			f := &Function{
 				log:  logging.NewNopLogger(),
 				fsys: testdataFS,
