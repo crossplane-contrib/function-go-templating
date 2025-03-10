@@ -1,0 +1,31 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-function-get-composition-env-var
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+            kind: FlexibleServer
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "flexserver" }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec:
+              forProvider:
+            
+                # Retrieve AdminLogin from request context
+                adminLogin: {{ getCompositionEnvVar . "adminLogin" }}
