@@ -1,0 +1,12 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  complexDictionary:
+    scalar1: true
+    scalar2: text
+    scalar3: 123
+    list:
+      - abc
+      - def

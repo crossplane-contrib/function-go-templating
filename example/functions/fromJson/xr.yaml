@@ -1,0 +1,9 @@
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  name: example
+spec:
+  jsonObject: |
+    {"key1":"value1","key2":"value2","key3":"value3"}
+  jsonArray: |
+    ["foo","baz"]

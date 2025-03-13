@@ -325,6 +325,8 @@ conditions:
 | [`randomChoice`](example/inline)                                 | Randomly selects one of a given strings                      |
 | [`toYaml`](example/functions/toYaml)                             | Marshals any object into a YAML string                       |
 | [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object                      |
+| [`toJson`](example/functions/toJson)                             | Marshals any object/array into a JSON string                 |
+| [`fromJson`](example/functions/fromJson)                         | Unmarshals a JSON string into an object/array                |
 | [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources          |
 | [`getComposedResource`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
 | [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retreive the observed composite resource |

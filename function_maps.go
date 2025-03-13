@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -22,6 +23,8 @@ var funcMaps = []template.FuncMap{
 		"randomChoice":              randomChoice,
 		"toYaml":                    toYaml,
 		"fromYaml":                  fromYaml,
+		"toJson":                    toJSON,
+		"fromJson":                  fromJSON,
 		"getResourceCondition":      getResourceCondition,
 		"setResourceNameAnnotation": setResourceNameAnnotation,
 		"getComposedResource":       getComposedResource,
@@ -75,6 +78,24 @@ func fromYaml(val string) (any, error) {
 	err := yaml.Unmarshal([]byte(val), &res)
 
 	return res, err
+}
+
+func toJSON(v interface{}) (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+func fromJSON(str string) (any, error) {
+	var res any
+	if err := json.Unmarshal([]byte(str), &res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func getResourceCondition(ct string, res map[string]any) xpv1.Condition {

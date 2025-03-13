@@ -126,6 +126,126 @@ func Test_toYaml(t *testing.T) {
 	}
 }
 
+func Test_fromJson(t *testing.T) {
+	type args struct {
+		val string
+	}
+	type want struct {
+		rsp any
+		err error
+	}
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"UnmarshalJsonObject": {
+			reason: "Should return unmarshalled json",
+			args: args{
+				val: `{"complexDictionary": {"scalar1": true, "list": ["abc", "def"]}}`,
+			},
+			want: want{
+				rsp: map[string]interface{}{
+					"complexDictionary": map[string]interface{}{
+						"scalar1": true,
+						"list": []interface{}{
+							"abc",
+							"def",
+						},
+					},
+				},
+			},
+		},
+		"UnmarshalJsonArray": {
+			reason: "Should return unmarshalled json array",
+			args: args{
+				val: `[{"complexDictionary": {"scalar1": true, "list": ["abc", "def"]}}]`,
+			},
+			want: want{
+				rsp: []interface{}{
+					map[string]interface{}{
+						"complexDictionary": map[string]interface{}{
+							"scalar1": true,
+							"list": []interface{}{
+								"abc",
+								"def",
+							},
+						},
+					},
+				},
+			},
+		},
+		"UnmarshalJsonError": {
+			reason: "Should return error when unmarshalling json",
+			args: args{
+				val: `{a}`,
+			},
+			want: want{
+				err: cmpopts.AnyError,
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rsp, err := fromJSON(tc.args.val)
+
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\nfromJson(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\nfromJson(...): -want err, +got err:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_toJson(t *testing.T) {
+	type args struct {
+		val any
+	}
+	type want struct {
+		rsp any
+		err error
+	}
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"MarshalJson": {
+			reason: "Should return marshalled json",
+			args: args{
+				val: map[string]interface{}{
+					"complexDictionary": map[string]interface{}{
+						"scalar1": true,
+						"list": []interface{}{
+							"abc",
+							"def",
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: `{"complexDictionary":{"list":["abc","def"],"scalar1":true}}`,
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rsp, err := toJSON(tc.args.val)
+
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\ntoJson(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\ntoJson(...): -want err, +got err:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
 func Test_getResourceCondition(t *testing.T) {
 	type args struct {
 		ct  string
