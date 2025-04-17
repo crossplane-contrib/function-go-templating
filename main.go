@@ -7,6 +7,9 @@ import (
 	"github.com/crossplane/function-sdk-go"
 )
 
+// MaxRecvMessageSize sets the maximum message size. gRPC default is 4MB
+const MaxRecvMessageSize = 1024 * 1024 * 16
+
 // CLI of this Function.
 type CLI struct {
 	Debug bool `short:"d" help:"Emit debug logs in addition to info logs."`
@@ -31,7 +34,9 @@ func (c *CLI) Run() error {
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
-		function.Insecure(c.Insecure))
+		function.Insecure(c.Insecure),
+		function.MaxRecvMessageSize(MaxRecvMessageSize),
+	)
 }
 
 func main() {
