@@ -143,6 +143,7 @@ jobs:
         with:
           path: .
           merge-multiple: true
+          pattern: "!*.dockerbuild" # This gets uploaded by docker/build-push-action but must be skipped: https://github.com/actions/toolkit/pull/1874
 
       - name: Setup the Crossplane CLI
         run: "curl -sL https://raw.githubusercontent.com/crossplane/crossplane/master/install.sh | sh"
