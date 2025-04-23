@@ -1739,12 +1739,10 @@ func TestRunFunction(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			// NOTE: This means we can't run tests in parallel.
-			defaultSource = tc.args.defaultSource
-
 			f := &Function{
-				log:  logging.NewNopLogger(),
-				fsys: testdataFS,
+				log:           logging.NewNopLogger(),
+				fsys:          testdataFS,
+				defaultSource: tc.args.defaultSource,
 			}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 
