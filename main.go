@@ -2,6 +2,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/alecthomas/kong"
 
 	"github.com/crossplane/function-sdk-go"
@@ -27,8 +29,9 @@ func (c *CLI) Run() error {
 
 	return function.Serve(
 		&Function{
-			log:  log,
-			fsys: &osFS{},
+			log:           log,
+			fsys:          &osFS{},
+			defaultSource: os.Getenv("FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"),
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
