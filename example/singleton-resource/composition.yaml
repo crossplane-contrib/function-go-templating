@@ -1,0 +1,97 @@
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xsingletonresources.example.crossplane.io
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1
+    kind: XSingletonResource
+  mode: Pipeline
+  pipeline:
+    - step: check-resource-existence-create
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |-
+            {{- $resourceSpec := index .observed.composite.resource.spec.resource }}
+            {{- $readyStatus := false -}}
+            {{- $externalName := "" -}}
+            ---
+            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+            kind: ExtraResources
+            requirements:
+              resources:
+                apiVersion: {{ $resourceSpec.apiVersion }}
+                kind: {{ $resourceSpec.kind }}
+                matchName: {{ $resourceSpec.metadata.name }}
+            {{- with .extraResources }}
+              {{- $someExtraResources := index . "resources" }}
+              {{- range $i, $extraResource := $someExtraResources.items }}
+                {{- $resourceName := $extraResource.resource.metadata.name }}
+                {{- if eq $resourceName  $resourceSpec.metadata.name }}
+                  {{- $extraResourcesStatus := fromJson ($extraResource.resource.status.conditions | toJson) }}
+                  {{- if gt (len $extraResourcesStatus) 1 }}
+                    {{- $syncConditionReadyStatus := index $extraResourcesStatus 1 }}
+                    {{- if eq $syncConditionReadyStatus.status "True" }}  # Assuming "True" indicates readiness
+                      {{- $readyStatus = true -}}  # Set readyStatus to true if condition is met
+                      {{ $externalName = index $extraResource.resource.metadata.annotations "crossplane.io/external-name" }}
+                    {{- else }}
+                      {{- $readyStatus = false -}}
+                    {{- end }}
+                  {{- else }}
+                    {{- $readyStatus = false -}}
+                  {{- end }}
+                {{- else }}
+                  {{- $readyStatus = false -}}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+            {{- if $readyStatus }}
+            ---
+            apiVersion: {{ $resourceSpec.apiVersion }}
+            kind: {{ $resourceSpec.kind }}
+            metadata:
+              name: {{ $resourceSpec.metadata.name }}-readonly-{{ $.observed.composite.resource.metadata.name }}
+              annotations:
+                crossplane.io/external-name: {{ $externalName }}
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $resourceSpec.metadata.name }}
+            spec:
+            {{- toYaml $resourceSpec.spec | nindent 2 }}
+              managementPolicies: ["Observe"]
+            ---
+            apiVersion: example.crossplane.io/v1
+            kind: XSingletonResource
+            metadata:
+              name: {{ $.observed.composite.resource.metadata.name }}
+            status:
+              externalResourceStatus: "Already exist {{ $resourceSpec.metadata.name }} of kind {{ $resourceSpec.kind }}"
+              externalName: {{ $externalName }}
+            {{- else }}
+            ---
+            apiVersion: {{ $resourceSpec.apiVersion }}
+            kind: {{ $resourceSpec.kind }}
+            metadata:
+              name: {{ $resourceSpec.metadata.name }}
+              annotations:
+                crossplane.io/external-name: {{ $resourceSpec.metadata.name }}
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $resourceSpec.metadata.name }}
+            spec:
+            {{- toYaml $resourceSpec.spec | nindent 2 }}
+              managementPolicies: ["Observe", "Create"]
+            ---
+            apiVersion: example.crossplane.io/v1
+            kind: XSingletonResource
+            metadata:
+              name: {{ $.observed.composite.resource.metadata.name }}
+            status:
+              externalResourceStatus: "resource name {{ $resourceSpec.metadata.name }} of kind {{ $resourceSpec.kind }} not exist. Creating.."
+              externalName: {{ $externalName }}
+            {{- end }}
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: function-auto-ready
