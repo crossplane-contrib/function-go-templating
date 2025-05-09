@@ -328,6 +328,7 @@ conditions:
 | [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources          |
 | [`getComposedResource`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
 | [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retreive the observed composite resource |
+| [`getExtraResources`](example/functions/getExtraResources)       | Helper function to retreive extra resources                  |
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
 | [`include`](example/functions/include)                           | Outputs template as a string                                 |
 
