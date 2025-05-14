@@ -1,0 +1,8 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-go-templating
+  annotations:
+    render.crossplane.io/runtime: Development
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.8.0
