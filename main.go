@@ -2,9 +2,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/alecthomas/kong"
 
 	"github.com/crossplane/function-sdk-go"
+	"github.com/crossplane/function-sdk-go/response"
 )
 
 // CLI of this Function.
@@ -16,6 +19,7 @@ type CLI struct {
 	TLSCertsDir        string `help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)" env:"TLS_SERVER_CERTS_DIR"`
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
 	MaxRecvMessageSize int    `help:"Maximum size of received messages in MB." default:"4"`
+	TTL                string `help:"TTL" default:"${defaultTTL}"`
 }
 
 // Run this Function.
@@ -25,10 +29,16 @@ func (c *CLI) Run() error {
 		return err
 	}
 
+	ttl, err := time.ParseDuration(c.TTL)
+	if err != nil {
+		return err
+	}
+
 	return function.Serve(
 		&Function{
 			log:  log,
 			fsys: &osFS{},
+			ttl:  ttl,
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
@@ -37,6 +47,10 @@ func (c *CLI) Run() error {
 }
 
 func main() {
-	ctx := kong.Parse(&CLI{}, kong.Description("A Crossplane Composition Function."))
+	ctx := kong.Parse(
+		&CLI{},
+		kong.Description("A Crossplane Composition Function."),
+		kong.Vars{"defaultTTL": response.DefaultTTL.String()},
+	)
 	ctx.FatalIfErrorf(ctx.Run())
 }

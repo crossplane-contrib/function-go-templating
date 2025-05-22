@@ -955,6 +955,7 @@ func TestRunFunction(t *testing.T) {
 			f := &Function{
 				log:  logging.NewNopLogger(),
 				fsys: testdataFS,
+				ttl:  response.DefaultTTL,
 			}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 

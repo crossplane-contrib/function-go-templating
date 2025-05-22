@@ -7,9 +7,11 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"time"
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -42,11 +44,13 @@ type Function struct {
 
 	log  logging.Logger
 	fsys fs.FS
+	ttl  time.Duration
 }
 
 const (
 	annotationKeyCompositionResourceName = "gotemplating.fn.crossplane.io/composition-resource-name"
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
+	annotationKeyTtl                     = "gotemplating.fn.crossplane.io/ttl"
 
 	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
@@ -54,10 +58,10 @@ const (
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
 	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
-
-	rsp := response.To(req, response.DefaultTTL)
-
 	in := &v1beta1.GoTemplate{}
+
+	rsp := response.To(req, f.ttl)
+
 	if err := request.GetInput(req, in); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
@@ -146,6 +150,18 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	// Initialize the requirements.
 	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
+
+	// Override the TTL if specified in the observed composite.
+	if v, found := observedComposite.Resource.GetAnnotations()[annotationKeyTtl]; found {
+
+		t, err := time.ParseDuration(v)
+		if err != nil {
+			f.log.Debug("Ignoring Ttl annotation, wrong format", v)
+		}
+		rsp.Meta.Ttl = durationpb.New(t)
+		// Remove meta annotation.
+		meta.RemoveAnnotations(observedComposite.Resource, annotationKeyTtl)
+	}
 
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
