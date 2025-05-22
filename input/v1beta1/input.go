@@ -5,12 +5,7 @@
 package v1beta1
 
 import (
-	"github.com/crossplane/function-sdk-go/response"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-const (
-	defaultTtl = response.DefaultTTL
 )
 
 // This isn't a custom resource, in the sense that we never install its CRD.
@@ -32,7 +27,8 @@ type GoTemplate struct {
 	Inline *TemplateSourceInline `json:"inline,omitempty"`
 	// FileSystem is the folder path where the templates are located
 	FileSystem *TemplateSourceFileSystem `json:"fileSystem,omitempty"`
-	// TTL for which a response can be cached
+	// TTL for which a response can be cached in time.Duration format
+	// +kubebuilder:default="1m0s"
 	// +optional
 	TTL string `json:"ttl"`
 }

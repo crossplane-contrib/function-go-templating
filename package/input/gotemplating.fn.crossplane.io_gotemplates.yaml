@@ -67,7 +67,8 @@ spec:
               can be used with this function
             type: string
           ttl:
-            description: TTL for which a response can be cached
+            default: 1m0s
+            description: TTL for which a response can be cached in time.Duration format
             type: string
         required:
         - source
