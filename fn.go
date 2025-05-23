@@ -67,6 +67,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
+	if in.TTL != "" {
+		ttlDuration, err := time.ParseDuration(in.TTL)
+		if err == nil {
+			rsp.Meta.Ttl = durationpb.New(ttlDuration)
+		}
+	}
+
 	tg, err := NewTemplateSourceGetter(f.fsys, in)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid function input"))

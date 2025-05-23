@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -40,6 +41,7 @@ var (
 	xrWithNestedStatusFoo = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"}}}`
 	xrWithNestedStatusBaz = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
 	xrRecursiveTmpl       = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"recursive-xr"},"name":"recursive-xr","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}},"spec":{"count":2}}`
+	xrWithTtl             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ttl": "5m"},"name":"cool-xr"},"spec":{"count":2}}`
 
 	claimConditions            = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"TestCondition","status":"False","reason":"InstallFail","message":"failed to install","target":"ClaimAndComposite"},{"type":"ConditionTrue","status":"True","reason":"this condition is true","message":"we are true","target":"Composite"},{"type":"DatabaseReady","status":"True","reason":"Ready","message":"Database is ready"}]}`
 	claimConditionsReservedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"Ready","status":"False","reason":"InstallFail","message":"I am using a reserved Condition","target":"ClaimAndComposite"}]}`
@@ -942,6 +944,84 @@ func TestRunFunction(t *testing.T) {
 						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
 								Resource: resource.MustStructJSON(cd),
+							},
+						},
+					},
+				},
+			},
+		},
+		"CustomInputTtl": {
+			reason: "The Function should use a custom TTL when instructed.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
+							TTL:    "20m",
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(20 * time.Minute)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"CustomAnnotationTtl": {
+			reason: "The Function should use a custom TTL when given in the XR annotation.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
+							TTL:    "20m", // this should be overridden by the annotation
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xrWithTtl),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xrWithTtl),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(5 * time.Minute)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xrWithTtl),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
 							},
 						},
 					},
