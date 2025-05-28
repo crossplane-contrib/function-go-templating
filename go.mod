@@ -3,7 +3,7 @@ module github.com/crossplane-contrib/function-go-templating
 go 1.23.8
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/alecthomas/kong v0.9.0
 	github.com/crossplane/crossplane-runtime v1.18.0
