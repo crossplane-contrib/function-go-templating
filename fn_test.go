@@ -31,7 +31,8 @@ var (
 	cdWithReadyTrue       = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd","gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-cd"}}`
 
 	metaResourceInvalid        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
-	metaResourceConDet         = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}` // encoded string "value"
+	metaResourceConDet         = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}`  // encoded string "value"
+	metaResourceConDet2        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key2":"ZXVsYXY="}}` // encoded string "eulav"
 	metaResourceContextInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data": 1 }`
 	metaResourceContext        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"apiextensions.crossplane.io/environment":{ "new":"value"}}}`
 
@@ -393,6 +394,38 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"MergeDesiredCompositeStatus": {
+			reason: "The Function should merge all the desired composite resources.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithNestedStatusFoo + xrWithNestedStatusBaz},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar","baz":"qux"}}}`),
+						},
+					},
+				},
+			},
+		},
 		"ResponseIsReturnedWithTemplatedXR": {
 			reason: "The Function should return the desired composite resource and the composed templated XR resource.",
 			args: args{
@@ -737,6 +770,39 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1.Resource{
 							Resource:          resource.MustStructJSON(xr),
 							ConnectionDetails: map[string][]byte{"key": []byte("value")},
+						},
+					},
+				},
+			},
+		},
+		"MergeCompositeConnectionDetails": {
+			reason: "The Function should merge all CompositeConnectionDetails.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDet + metaResourceConDet2},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource:          resource.MustStructJSON(xr),
+							ConnectionDetails: map[string][]byte{"key": []byte("value"), "key2": []byte("eulav")},
 						},
 					},
 				},
