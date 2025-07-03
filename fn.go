@@ -63,7 +63,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	tg, err := NewTemplateSourceGetter(f.fsys, in)
+	tg, err := NewTemplateSourceGetter(f.fsys, req.GetContext(), in)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid function input"))
 		return rsp, nil

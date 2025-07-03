@@ -1,0 +1,42 @@
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: sampletemplate
+data:
+  template: |
+    ---
+    apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+    kind: Context
+    data:
+      # update existing EnvironmentConfig by using the "apiextensions.crossplane.io/environment" key
+      "apiextensions.crossplane.io/environment":
+         kind: Environment
+         apiVersion: internal.crossplane.io/v1alpha1
+         update: environment
+         nestedEnvUpdate:
+           hello: world
+         array:
+         - "1"
+         - "2"
+      # read existing context and move it to another key
+      "other-context-key":
+         complex: {{ index .context "apiextensions.crossplane.io/environment" "complex" | toYaml | nindent 6 }}
+       # Create a new Context key and populate it with data
+      newkey:
+        hello: world
+    ---
+    apiVersion: example.crossplane.io/v1
+    kind: XR
+    status:
+      fromEnv: {{ index .context "apiextensions.crossplane.io/environment" "complex" "c" "d" }}
+---
+apiVersion: apiextensions.crossplane.io/v1alpha1
+kind: EnvironmentConfig
+metadata:
+  name: example-config
+data:
+  complex:
+    a: b
+    c:
+      d: e
+      f: "1"

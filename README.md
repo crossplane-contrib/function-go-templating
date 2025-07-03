@@ -43,13 +43,16 @@ spec:
 
 ## Using this function
 
-This function can load templates from two sources: `Inline` and `FileSystem`.
+This function can load templates from three sources: `Inline`, `FileSystem` and `Environment`.
 
 Use the `Inline` source to specify a simple template inline in your Composition.
 Multiple YAML manifests can be specified using the `---` document separator.
 
 Use the `FileSystem` source to specify a directory of templates. The
 `FileSystem` source treats all files under the specified directory as templates.
+
+Use the `Environment` source to specify a key in the context environment that contains the templates.
+This allows templates to be dynamically loaded from sources such as `EnvironmentConfigs`.
 
 The templates are passed a [`RunFunctionRequest`][bsr] as data. This means that
 you can access the composite resource, any composed resources, and the function

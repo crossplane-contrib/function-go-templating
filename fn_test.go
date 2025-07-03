@@ -49,7 +49,7 @@ var (
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
 	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
-
+	key       = "userkey/go-template"
 	path      = "testdata/templates"
 	wrongPath = "testdata/wrong"
 
@@ -152,6 +152,28 @@ func TestRunFunction(t *testing.T) {
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: fileSystem.dirPath should be provided",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"WrongEnvironmentInput": {
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.EnvironmentSource,
+						}),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: environment.key should be provided",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -488,6 +510,100 @@ func TestRunFunction(t *testing.T) {
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: cannot read tmpl from the folder {testdata/wrong}: open testdata/wrong: file does not exist",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"ResponseIsReturnedWithTemplatingEnvironment": {
+			reason: "The Function should return the desired composite resource and the templated composed resources with Environment cd.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment": {"userkey/go-template": "apiVersion: example.org/v1\nkind: CD\nmetadata:\n  name: cool-cd\n  annotations:\n    gotemplating.fn.crossplane.io/composition-resource-name: cool-cd\n  labels:\n    belongsTo: {{ .observed.composite.resource.metadata.name|quote }}"}}`),
+					Meta:    &fnv1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source:      v1beta1.EnvironmentSource,
+							Environment: &v1beta1.TemplateSourceEnvironment{Key: key},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment": {"userkey/go-template":"apiVersion: example.org/v1\nkind: CD\nmetadata:\n  name: cool-cd\n  annotations:\n    gotemplating.fn.crossplane.io/composition-resource-name: cool-cd\n  labels:\n    belongsTo: {{ .observed.composite.resource.metadata.name|quote }}"}}`),
+					Meta:    &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"CannotReadTemplatesFromEnvironment": {
+			reason: "The Function should return a fatal result if the templates cannot be read from the environment.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Context: resource.MustStructJSON(`{}`),
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source:      v1beta1.EnvironmentSource,
+							Environment: &v1beta1.TemplateSourceEnvironment{Key: key},
+						},
+					),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Context: resource.MustStructJSON(`{}`),
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: cannot read tmpl from the environment: apiextensions.crossplane.io/environment key does not exist in context",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"CannotReadTemplatesFromEnvironmentKey": {
+			reason: "The Function should return a fatal result if the templates cannot be read from the environment.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment": {}}`),
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source:      v1beta1.EnvironmentSource,
+							Environment: &v1beta1.TemplateSourceEnvironment{Key: key},
+						},
+					),
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment": {}}`),
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: cannot read tmpl from the environment: key: userkey/go-template does not exist",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},

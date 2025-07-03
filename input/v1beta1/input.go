@@ -27,6 +27,8 @@ type GoTemplate struct {
 	Inline *TemplateSourceInline `json:"inline,omitempty"`
 	// FileSystem is the folder path where the templates are located
 	FileSystem *TemplateSourceFileSystem `json:"fileSystem,omitempty"`
+	// Environment is the key that defines the location of the templates in the environment
+	Environment *TemplateSourceEnvironment `json:"environment,omitempty"`
 }
 
 type TemplateSource string
@@ -37,6 +39,9 @@ const (
 
 	// FileSystemSource indicates that function will get its input from a folder
 	FileSystemSource TemplateSource = "FileSystem"
+
+	// EnvironmentSource indicates that function will get its input from the environment
+	EnvironmentSource TemplateSource = "Environment"
 )
 
 type TemplateSourceInline struct {
@@ -45,6 +50,10 @@ type TemplateSourceInline struct {
 
 type TemplateSourceFileSystem struct {
 	DirPath string `json:"dirPath,omitempty"`
+}
+
+type TemplateSourceEnvironment struct {
+	Key string `json:"key,omitempty"`
 }
 
 type Delims struct {
