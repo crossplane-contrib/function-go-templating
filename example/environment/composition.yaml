@@ -1,0 +1,36 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: go-template-context.example.crossplane.io
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+  - step: environmentConfigs
+    functionRef:
+      name: crossplane-contrib-function-environment-configs
+    input:
+      apiVersion: environmentconfigs.fn.crossplane.io/v1beta1
+      kind: Input
+      spec:
+        environmentConfigs:
+          - type: Reference
+            ref:
+              name: sampletemplate
+          - type: Reference
+            ref:
+              name: example-config
+  - step: go-templating-update-context
+    functionRef:
+      name: crossplane-contrib-function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      kind: GoTemplate
+      source: Environment
+      environment:
+        key: template
+  - step: automatically-detect-ready-composed-resources
+    functionRef:
+      name: crossplane-contrib-function-auto-ready
