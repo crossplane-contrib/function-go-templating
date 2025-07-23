@@ -197,7 +197,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				return rsp, nil
 			}
 
-			// Set the ready state.
+			// Set ready state.
 			if ready != nil {
 				desiredComposite.Ready = *ready
 			}
@@ -269,7 +269,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			continue
 		}
 
-		// Set the ready state.
+		// Set ready state.
 		if ready != nil {
 			cd.Ready = *ready
 		}
