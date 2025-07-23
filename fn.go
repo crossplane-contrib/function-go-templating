@@ -153,8 +153,26 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
+		// Check for ready state.
+		var ready *resource.Ready
+		if cd.Resource.GetAPIVersion() != metaApiVersion {
+			if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
+				if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
+					response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
+					return rsp, nil
+				}
+
+				r := resource.Ready(v)
+				ready = &r
+
+				// Remove meta annotation.
+				meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
+			}
+		}
+
+		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Handle if the composite resource appears in the rendered template.
-		// Unless resource name annotation is present, update only the status of the desired composite resource.
+		// Unless resource name annotation is present, update only the status and ready state of the desired composite resource.
 		name, nameFound := obj.GetAnnotations()[annotationKeyCompositionResourceName]
 		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() && !nameFound {
 			dst := make(map[string]any)
@@ -177,6 +195,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
 				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
 				return rsp, nil
+			}
+
+			// Set the ready state.
+			if ready != nil {
+				desiredComposite.Ready = *ready
 			}
 
 			continue
@@ -246,18 +269,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			continue
 		}
 
-		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
-		// Set ready state.
-		if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
-			if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
-				response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
-				return rsp, nil
-			}
-
-			cd.Ready = resource.Ready(v)
-
-			// Remove meta annotation.
-			meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
+		// Set the ready state.
+		if ready != nil {
+			cd.Ready = *ready
 		}
 
 		// Remove resource name annotation.
