@@ -176,25 +176,38 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		name, nameFound := obj.GetAnnotations()[annotationKeyCompositionResourceName]
 		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() && !nameFound {
 			dst := make(map[string]any)
-			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
-				return rsp, nil
+			dstExists := true
+			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil {
+				if fieldpath.IsNotFound(err) {
+					dstExists = false
+				} else {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+					return rsp, nil
+				}
 			}
 
 			src := make(map[string]any)
-			if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
-				return rsp, nil
+			srcExists := true
+			if err := cd.Resource.GetValueInto("status", &src); err != nil {
+				if fieldpath.IsNotFound(err) {
+					srcExists = false
+				} else {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
+					return rsp, nil
+				}
 			}
 
-			if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
-				response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
-				return rsp, nil
-			}
+			// Only update status if there's either existing status or new status content.
+			if dstExists || srcExists {
+				if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
+					return rsp, nil
+				}
 
-			if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
-				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
-				return rsp, nil
+				if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
+					return rsp, nil
+				}
 			}
 
 			// Set ready state.
