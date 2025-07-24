@@ -967,7 +967,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						Resources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
