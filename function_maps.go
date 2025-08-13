@@ -80,7 +80,9 @@ func fromYaml(val string) (any, error) {
 func getResourceCondition(ct string, res map[string]any) xpv1.Condition {
 	var conditioned xpv1.ConditionedStatus
 	if err := fieldpath.Pave(res).GetValueInto("resource.status", &conditioned); err != nil {
-		conditioned = xpv1.ConditionedStatus{}
+		if err := fieldpath.Pave(res).GetValueInto("status", &conditioned); err != nil {
+			conditioned = xpv1.ConditionedStatus{}
+		}
 	}
 
 	// Return either found condition or empty one with "Unknown" status

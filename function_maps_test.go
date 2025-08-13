@@ -32,7 +32,7 @@ func Test_fromYaml(t *testing.T) {
 complexDictionary:
   scalar1: true
   list:
-  - abc	
+  - abc
   - def`,
 			},
 			want: want{
@@ -152,6 +152,28 @@ func Test_getResourceCondition(t *testing.T) {
 									"type":   "Ready",
 									"status": "True",
 								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: v1.Condition{
+					Type:   "Ready",
+					Status: "True",
+				},
+			},
+		},
+		"GetConditionObservedResource": {
+			reason: "Should return condition, even if not wrapped in 'resource'",
+			args: args{
+				ct: "Ready",
+				res: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
+								"type":   "Ready",
+								"status": "True",
 							},
 						},
 					},
