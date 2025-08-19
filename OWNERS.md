@@ -14,5 +14,6 @@ repository maintainers in their own `OWNERS.md` file.
 * Nic Cope <negz@upbound.com> ([negz](https://github.com/negz))
 * Sergen Yalcin <sergen@upbound.com> ([sergenyalcin](https://github.com/sergenyalcin))
 * Fatih Turken <fatih@upbound.com> ([turkenf](https://github.com/turkenf))
+* Bob Haddleton <bob.haddleton@nokia.com> ([bobh66](https://github.com/bobh66))
 
 See [CODEOWNERS](./CODEOWNERS) for automatic PR assignment.
