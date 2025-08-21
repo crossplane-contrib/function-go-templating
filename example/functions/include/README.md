@@ -1,4 +1,4 @@
-# getResourceCondition
+# include
 
 ## Usage
 
