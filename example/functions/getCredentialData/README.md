@@ -3,7 +3,7 @@ The getCredentialData function is a utility function used to facilitate the retr
 
 ## Testing This Function Locally
 
-You can run your function locally and test it with [`crossplane render`](https://docs.crossplane.io/v1.18/cli/command-reference/#render/)
+You can run your function locally and test it with [`crossplane render`](https://docs.crossplane.io/latest/cli/command-reference/#render/)
 
 ```shell {copy-lines="1-3"}
 crossplane render xr.yaml composition.yaml functions.yaml \
