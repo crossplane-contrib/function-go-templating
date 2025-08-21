@@ -11,8 +11,8 @@ require (
 	github.com/google/go-cmp v0.6.0
 	google.golang.org/protobuf v1.34.3-0.20240816073751-94ecbc261689
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.0
-	k8s.io/apimachinery v0.31.0
+	k8s.io/api v0.33.4
+	k8s.io/apimachinery v0.33.4
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-tools v0.16.0
 )
