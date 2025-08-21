@@ -5,4 +5,4 @@ metadata:
   annotations:
     render.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.810.0
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.10.0
