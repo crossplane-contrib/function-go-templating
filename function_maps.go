@@ -154,15 +154,12 @@ func getCredentialData(mReq map[string]any, credName string) map[string][]byte {
 		return nil
 	}
 
-	var data map[string][]byte
 	switch req.GetCredentials()[credName].GetSource().(type) {
 	case *fnv1.Credentials_CredentialData:
-		data = req.GetCredentials()[credName].GetCredentialData().GetData()
+		return req.GetCredentials()[credName].GetCredentialData().GetData()
 	default:
 		return nil
 	}
-
-	return data
 }
 
 func convertFromMap(mReq map[string]any) (*fnv1.RunFunctionRequest, error) {
