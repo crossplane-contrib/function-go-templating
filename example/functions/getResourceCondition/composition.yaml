@@ -21,15 +21,15 @@ spec:
             apiVersion: {{ .observed.composite.resource.apiVersion }}
             kind: {{ .observed.composite.resource.kind }}
             status:
-              # Retreive condition of XR
+              # retrieve condition of XR
               compositeCondition:
                 {{ getResourceCondition "Ready" .observed.composite | toYaml | nindent 4 }}
 
-              # Retreive non existing condition of a resource just returns an Unknown condition
+              # retrieve non existing condition of a resource just returns an Unknown condition
               compositeConditionNotFound:
                 {{ getResourceCondition "Other" .observed.composite | toYaml | nindent 4 }}
 
-              # You can also retreive conditions of composed resources the same way
+              # You can also retrieve conditions of composed resources the same way
               composedCondition:
                 {{ getResourceCondition "Ready" .observed.resources.project  | toYaml | nindent 4 }}
 

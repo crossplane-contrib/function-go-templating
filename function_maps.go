@@ -26,6 +26,7 @@ var funcMaps = []template.FuncMap{
 		"setResourceNameAnnotation": setResourceNameAnnotation,
 		"getComposedResource":       getComposedResource,
 		"getCompositeResource":      getCompositeResource,
+		"getExtraResources":         getExtraResources,
 	},
 }
 
@@ -131,4 +132,14 @@ func getCompositeResource(req map[string]any) map[string]any {
 	}
 
 	return cr
+}
+
+func getExtraResources(req map[string]any, name string) []any {
+	var ers []any
+	path := fmt.Sprintf("extraResources[%s].items", name)
+	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
+		return nil
+	}
+
+	return ers
 }
