@@ -581,3 +581,123 @@ func Test_getExtraResources(t *testing.T) {
 		})
 	}
 }
+
+func Test_getCompositionEnvVar(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp any
+		err error
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveCompositionEnvVar": {
+			reason: "Should successfully retrieve a composition env var",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"test": "abc",
+						},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: "abc",
+				err: nil,
+			},
+		},
+		"RetrieveCompositionEnvVarCaseInsensitive": {
+			reason: "Should successfully retrieve a composition env var case insensitive",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"TEST": "abc",
+						},
+					},
+				},
+				name: "TEST",
+			},
+			want: want{
+				rsp: "abc",
+				err: nil,
+			},
+		},
+		"RetrieveCompositionEnvVarList": {
+			reason: "Should successfully retrieve a composition env var as a list",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"test": []string{"abc"},
+						},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: []string{"abc"},
+				err: nil,
+			},
+		},
+		"RetrieveCompositionEnvVarMap": {
+			reason: "Should successfully retrieve a composition env var as a map",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"test": map[string]any{
+								"key": "abc",
+							},
+						},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: map[string]any{
+					"key": "abc",
+				},
+				err: nil,
+			},
+		},
+		"NotExistingEnvVar": {
+			reason: "Should return nil when env var does not exist",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: nil,
+				err: cmpopts.AnyError,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rsp, err := getCompositionEnvVar(tc.args.req, tc.args.name)
+
+			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
+				t.Errorf("%s\ngetCompositionEnvVar(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\ntgetCompositionEnvVar(...): -want err, +got err:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}

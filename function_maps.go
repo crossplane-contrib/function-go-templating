@@ -27,6 +27,7 @@ var funcMaps = []template.FuncMap{
 		"getComposedResource":       getComposedResource,
 		"getCompositeResource":      getCompositeResource,
 		"getExtraResources":         getExtraResources,
+		"getCompositionEnvVar":      getCompositionEnvVar,
 	},
 }
 
@@ -142,4 +143,15 @@ func getExtraResources(req map[string]any, name string) []any {
 	}
 
 	return ers
+}
+
+func getCompositionEnvVar(req map[string]any, name string) (any, error) {
+	path := fmt.Sprintf(`context["apiextensions.crossplane.io/environment"]["%s"]`, name)
+
+	env, err := fieldpath.Pave(req).GetValue(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return env, nil
 }
