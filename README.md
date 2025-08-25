@@ -332,8 +332,8 @@ conditions:
 | [`getComposedResource`](example/functions/getComposedResource)   | Helper function to retrieve observed composed resources                      |
 | [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource                  |
 | [`getExtraResources`](example/functions/getExtraResources)       | Helper function to retrieve extra resources                                  |
-| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retreive the observed composite resource                  |
-| [`getCompositionEnvVar`](example/functions/getCompositionEnvVar) | Helper function to retreive an environment variable from the request context |
+| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource                  |
+| [`getCompositionEnvVar`](example/functions/getCompositionEnvVar) | Helper function to retrieve an environment variable from the request context |
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name                 |
 | [`include`](example/functions/include)                           | Outputs template as a string                                                 |
 
