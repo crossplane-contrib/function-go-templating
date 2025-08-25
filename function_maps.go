@@ -145,12 +145,12 @@ func getExtraResources(req map[string]any, name string) []any {
 	return ers
 }
 
-func getCompositionEnvVar(req map[string]any, name string) (string, error) {
+func getCompositionEnvVar(req map[string]any, name string) (any, error) {
 	path := fmt.Sprintf(`context["apiextensions.crossplane.io/environment"]["%s"]`, name)
 
-	env, err := fieldpath.Pave(req).GetString(path)
+	env, err := fieldpath.Pave(req).GetValue(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return env, nil

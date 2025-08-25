@@ -589,7 +589,7 @@ func Test_getCompositionEnvVar(t *testing.T) {
 	}
 
 	type want struct {
-		rsp string
+		rsp any
 		err error
 	}
 
@@ -632,8 +632,46 @@ func Test_getCompositionEnvVar(t *testing.T) {
 				err: nil,
 			},
 		},
+		"RetrieveCompositionEnvVarList": {
+			reason: "Should successfully retrieve a composition env var as a list",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"test": []string{"abc"},
+						},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: []string{"abc"},
+				err: nil,
+			},
+		},
+		"RetrieveCompositionEnvVarMap": {
+			reason: "Should successfully retrieve a composition env var as a map",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/environment": map[string]any{
+							"test": map[string]any{
+								"key": "abc",
+							},
+						},
+					},
+				},
+				name: "test",
+			},
+			want: want{
+				rsp: map[string]any{
+					"key": "abc",
+				},
+				err: nil,
+			},
+		},
 		"NotExistingEnvVar": {
-			reason: "Should return empty string when env var does not exist",
+			reason: "Should return nil when env var does not exist",
 			args: args{
 				req: map[string]any{
 					"context": map[string]any{
@@ -643,7 +681,7 @@ func Test_getCompositionEnvVar(t *testing.T) {
 				name: "test",
 			},
 			want: want{
-				rsp: "",
+				rsp: nil,
 				err: cmpopts.AnyError,
 			},
 		},
