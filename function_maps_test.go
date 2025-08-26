@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
 func Test_fromYaml(t *testing.T) {
@@ -577,6 +578,65 @@ func Test_getExtraResources(t *testing.T) {
 			got := getExtraResources(tc.args.req, tc.args.name)
 			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
 				t.Errorf("%s\ngetExtraResources(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_getCredentialData(t *testing.T) {
+	type args struct {
+		req *fnv1.RunFunctionRequest
+	}
+
+	type want struct {
+		data map[string][]byte
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveFunctionCredential": {
+			reason: "Should successfully retrieve the function credential",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Credentials: map[string]*fnv1.Credentials{
+						"foo-creds": {
+							Source: &fnv1.Credentials_CredentialData{
+								CredentialData: &fnv1.CredentialData{
+									Data: map[string][]byte{
+										"password": []byte("secret"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				data: map[string][]byte{
+					"password": []byte("secret"),
+				},
+			},
+		},
+		"FunctionCredentialNotFound": {
+			reason: "Should return nil if the function credential is not found",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Credentials: map[string]*fnv1.Credentials{},
+				},
+			},
+			want: want{data: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req, _ := convertToMap(tc.args.req)
+			got := getCredentialData(req, "foo-creds")
+			if diff := cmp.Diff(tc.want.data, got); diff != "" {
+				t.Errorf("%s\ngetCredentialData(...): -want data, +got data:\n%s", tc.reason, diff)
 			}
 		})
 	}
