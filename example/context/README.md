@@ -77,7 +77,7 @@ metadata:
   annotations: 
     render.crossplane.io/runtime: Development
 spec:
-  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.6.0
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.6.0
 ```
 
 While the function is running in one terminal, open another terminal window and run `crossplane render`.
