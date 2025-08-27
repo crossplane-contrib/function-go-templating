@@ -1,6 +1,7 @@
 package main
 
 import (
+	"google.golang.org/protobuf/types/known/structpb"
 	"io/fs"
 	"path/filepath"
 
@@ -18,12 +19,14 @@ type TemplateGetter interface {
 }
 
 // NewTemplateSourceGetter returns a TemplateGetter based on the cd source
-func NewTemplateSourceGetter(fsys fs.FS, in *v1beta1.GoTemplate) (TemplateGetter, error) {
+func NewTemplateSourceGetter(fsys fs.FS, ctx *structpb.Struct, in *v1beta1.GoTemplate) (TemplateGetter, error) {
 	switch in.Source {
 	case v1beta1.InlineSource:
 		return newInlineSource(in)
 	case v1beta1.FileSystemSource:
 		return newFileSource(fsys, in)
+	case v1beta1.EnvironmentSource:
+		return newEnvironmentSource(ctx, in)
 	case "":
 		return nil, errors.Errorf("source is required")
 	default:
@@ -40,6 +43,12 @@ type InlineSource struct {
 type FileSource struct {
 	FolderPath string
 	Template   string
+}
+
+// EnvironmentSource is a datasource that reads a template from the environment
+type EnvironmentSource struct {
+	Key      string
+	Template string
 }
 
 // GetTemplates returns the inline template
@@ -77,6 +86,34 @@ func newFileSource(fsys fs.FS, in *v1beta1.GoTemplate) (*FileSource, error) {
 	return &FileSource{
 		FolderPath: in.FileSystem.DirPath,
 		Template:   tmpl,
+	}, nil
+}
+
+func (es *EnvironmentSource) GetTemplates() string {
+	return es.Template
+}
+
+func newEnvironmentSource(ctx *structpb.Struct, in *v1beta1.GoTemplate) (*EnvironmentSource, error) {
+	if in.Environment == nil || in.Environment.Key == "" {
+		return nil, errors.New("environment.key should be provided")
+	}
+	env, ok := ctx.AsMap()["apiextensions.crossplane.io/environment"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("cannot read tmpl from the environment: apiextensions.crossplane.io/environment key does not exist in context")
+	}
+	tpl, ok := env[in.Environment.Key]
+	if !ok {
+		return nil, errors.Errorf("cannot read tmpl from the environment: key: %s does not exist", in.Environment.Key)
+	}
+	switch tpl.(type) {
+	case string:
+		break
+	default:
+		return nil, errors.Errorf("cannot read tmpl from the environment: key: %s value is not a string", in.Environment.Key)
+	}
+
+	return &EnvironmentSource{
+		Template: tpl.(string),
 	}, nil
 }
 

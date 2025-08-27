@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
 func Test_fromYaml(t *testing.T) {
@@ -32,7 +33,7 @@ func Test_fromYaml(t *testing.T) {
 complexDictionary:
   scalar1: true
   list:
-  - abc	
+  - abc
   - def`,
 			},
 			want: want{
@@ -152,6 +153,28 @@ func Test_getResourceCondition(t *testing.T) {
 									"type":   "Ready",
 									"status": "True",
 								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: v1.Condition{
+					Type:   "Ready",
+					Status: "True",
+				},
+			},
+		},
+		"GetConditionObservedResource": {
+			reason: "Should return condition, even if not wrapped in 'resource'",
+			args: args{
+				ct: "Ready",
+				res: map[string]any{
+					"status": map[string]any{
+						"conditions": []any{
+							map[string]any{
+								"type":   "Ready",
+								"status": "True",
 							},
 						},
 					},
@@ -471,6 +494,149 @@ func Test_getCompositeResource(t *testing.T) {
 			got := getCompositeResource(tc.args.req)
 			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
 				t.Errorf("%s\ngetCompositeResource(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_getExtraResources(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp []any
+	}
+
+	completeResource := map[string]any{
+		"apiVersion": "dbforpostgresql.azure.upbound.io/v1beta1",
+		"kind":       "FlexibleServer",
+		"spec": map[string]any{
+			"forProvider": map[string]any{
+				"storageMb": "32768",
+			},
+		},
+		"status": map[string]any{
+			"atProvider": map[string]any{
+				"id": "abcdef",
+			},
+		},
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveCompleteResource": {
+			reason: "Should successfully retrieve the complete resource",
+			args: args{
+				req: map[string]any{
+					"extraResources": map[string]any{
+						"flexserver": map[string]any{
+							"items": []any{
+								completeResource,
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{
+				rsp: []any{
+					completeResource,
+				},
+			},
+		},
+		"ResourceNotFound": {
+			reason: "Should return empty list if no extra resources are found",
+			args: args{
+				req: map[string]any{
+					"extraResources": map[string]any{
+						"flexserver": map[string]any{
+							"items": []any{},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{rsp: []any{}},
+		},
+		"NoExtraResources": {
+			reason: "Should return nil if no extra resources are available",
+			args: args{
+				req:  map[string]any{},
+				name: "flexserver",
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getExtraResources(tc.args.req, tc.args.name)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetExtraResources(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_getCredentialData(t *testing.T) {
+	type args struct {
+		req *fnv1.RunFunctionRequest
+	}
+
+	type want struct {
+		data map[string][]byte
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveFunctionCredential": {
+			reason: "Should successfully retrieve the function credential",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Credentials: map[string]*fnv1.Credentials{
+						"foo-creds": {
+							Source: &fnv1.Credentials_CredentialData{
+								CredentialData: &fnv1.CredentialData{
+									Data: map[string][]byte{
+										"password": []byte("secret"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				data: map[string][]byte{
+					"password": []byte("secret"),
+				},
+			},
+		},
+		"FunctionCredentialNotFound": {
+			reason: "Should return nil if the function credential is not found",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Credentials: map[string]*fnv1.Credentials{},
+				},
+			},
+			want: want{data: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req, _ := convertToMap(tc.args.req)
+			got := getCredentialData(req, "foo-creds")
+			if diff := cmp.Diff(tc.want.data, got); diff != "" {
+				t.Errorf("%s\ngetCredentialData(...): -want data, +got data:\n%s", tc.reason, diff)
 			}
 		})
 	}

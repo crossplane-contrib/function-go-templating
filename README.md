@@ -43,13 +43,16 @@ spec:
 
 ## Using this function
 
-This function can load templates from two sources: `Inline` and `FileSystem`.
+This function can load templates from three sources: `Inline`, `FileSystem` and `Environment`.
 
 Use the `Inline` source to specify a simple template inline in your Composition.
 Multiple YAML manifests can be specified using the `---` document separator.
 
 Use the `FileSystem` source to specify a directory of templates. The
 `FileSystem` source treats all files under the specified directory as templates.
+
+Use the `Environment` source to specify a key in the context environment that contains the templates.
+This allows templates to be dynamically loaded from sources such as `EnvironmentConfigs`.
 
 The templates are passed a [`RunFunctionRequest`][bsr] as data. This means that
 you can access the composite resource, any composed resources, and the function
@@ -325,9 +328,10 @@ conditions:
 | [`randomChoice`](example/inline)                                 | Randomly selects one of a given strings                      |
 | [`toYaml`](example/functions/toYaml)                             | Marshals any object into a YAML string                       |
 | [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object                      |
-| [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retreive conditions of resources          |
+| [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retrieve conditions of resources          |
 | [`getComposedResource`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
-| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retreive the observed composite resource |
+| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource |
+| [`getExtraResources`](example/functions/getExtraResources)       | Helper function to retrieve extra resources                  |
 | [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
 | [`include`](example/functions/include)                           | Outputs template as a string                                 |
 

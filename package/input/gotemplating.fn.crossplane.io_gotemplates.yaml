@@ -40,6 +40,13 @@ spec:
                 description: Template end characters
                 type: string
             type: object
+          environment:
+            description: Environment is the key that defines the location of the templates
+              in the environment
+            properties:
+              key:
+                type: string
+            type: object
           fileSystem:
             description: FileSystem is the folder path where the templates are located
             properties:

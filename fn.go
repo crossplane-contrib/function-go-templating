@@ -57,7 +57,7 @@ const (
 
 // RunFunction runs the Function.
 func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
-	f.log.Info("Running Function", "tag", req.GetMeta().GetTag())
+	f.log.Debug("Running Function", "tag", req.GetMeta().GetTag())
 	in := &v1beta1.GoTemplate{}
 
 	rsp := response.To(req, f.ttl)
@@ -74,7 +74,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 	}
 
-	tg, err := NewTemplateSourceGetter(f.fsys, in)
+	tg, err := NewTemplateSourceGetter(f.fsys, req.GetContext(), in)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid function input"))
 		return rsp, nil
@@ -312,7 +312,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		rsp.Requirements = requirements
 	}
 
-	f.log.Info("Successfully composed desired resources", "source", in.Source, "count", len(objs))
+	f.log.Debug("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil
 }

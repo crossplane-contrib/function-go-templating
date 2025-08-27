@@ -12,7 +12,10 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
 const recursionMaxNums = 1000
@@ -26,6 +29,8 @@ var funcMaps = []template.FuncMap{
 		"setResourceNameAnnotation": setResourceNameAnnotation,
 		"getComposedResource":       getComposedResource,
 		"getCompositeResource":      getCompositeResource,
+		"getExtraResources":         getExtraResources,
+		"getCredentialData":         getCredentialData,
 	},
 }
 
@@ -80,7 +85,9 @@ func fromYaml(val string) (any, error) {
 func getResourceCondition(ct string, res map[string]any) xpv1.Condition {
 	var conditioned xpv1.ConditionedStatus
 	if err := fieldpath.Pave(res).GetValueInto("resource.status", &conditioned); err != nil {
-		conditioned = xpv1.ConditionedStatus{}
+		if err := fieldpath.Pave(res).GetValueInto("status", &conditioned); err != nil {
+			conditioned = xpv1.ConditionedStatus{}
+		}
 	}
 
 	// Return either found condition or empty one with "Unknown" status
@@ -129,4 +136,42 @@ func getCompositeResource(req map[string]any) map[string]any {
 	}
 
 	return cr
+}
+
+func getExtraResources(req map[string]any, name string) []any {
+	var ers []any
+	path := fmt.Sprintf("extraResources[%s].items", name)
+	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
+		return nil
+	}
+
+	return ers
+}
+
+func getCredentialData(mReq map[string]any, credName string) map[string][]byte {
+	req, err := convertFromMap(mReq)
+	if err != nil {
+		return nil
+	}
+
+	switch req.GetCredentials()[credName].GetSource().(type) {
+	case *fnv1.Credentials_CredentialData:
+		return req.GetCredentials()[credName].GetCredentialData().GetData()
+	default:
+		return nil
+	}
+}
+
+func convertFromMap(mReq map[string]any) (*fnv1.RunFunctionRequest, error) {
+	jReq, err := json.Marshal(&mReq)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot marshal map[string]any to json")
+	}
+
+	req := &fnv1.RunFunctionRequest{}
+	if err := protojson.Unmarshal(jReq, req); err != nil {
+		return nil, errors.Wrap(err, "cannot unmarshal request from json to proto")
+	}
+
+	return req, nil
 }
