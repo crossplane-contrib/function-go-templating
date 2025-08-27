@@ -27,6 +27,10 @@ type GoTemplate struct {
 	Inline *TemplateSourceInline `json:"inline,omitempty"`
 	// FileSystem is the folder path where the templates are located
 	FileSystem *TemplateSourceFileSystem `json:"fileSystem,omitempty"`
+	// TTL for which a response can be cached in time.Duration format
+	// +kubebuilder:default="1m0s"
+	// +optional
+	TTL string `json:"ttl"`
 	// Environment is the key that defines the location of the templates in the environment
 	Environment *TemplateSourceEnvironment `json:"environment,omitempty"`
 }
