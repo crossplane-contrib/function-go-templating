@@ -26,6 +26,6 @@ spec:
                 gotemplating.fn.crossplane.io/ready: "False"
             spec:
               forProvider:
-            
+
                 # Retrieve AdminLogin from request context
-                adminLogin: {{ getCompositionEnvVar . "adminLogin" }}
+                adminLogin: {{ getCompositionEnvironment . "adminLogin" }}

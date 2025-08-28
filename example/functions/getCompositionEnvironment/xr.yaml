@@ -5,6 +5,6 @@ metadata:
 spec:
   environment:
     environmentConfigs:
-    - type: Reference
-      ref:
-        name: example-environment
+      - type: Reference
+        ref:
+          name: example-environment

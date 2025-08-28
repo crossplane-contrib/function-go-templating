@@ -323,19 +323,19 @@ conditions:
 
 ## Additional functions
 
-| Name                                                             | Description                                                                  |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [`randomChoice`](example/inline)                                 | Randomly selects one of a given strings                                      |
-| [`toYaml`](example/functions/toYaml)                             | Marshals any object into a YAML string                                       |
-| [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object                                      |
-| [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retrieve conditions of resources                          |
-| [`getComposedResource`](example/functions/getComposedResource)   | Helper function to retrieve observed composed resources                      |
-| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource                  |
-| [`getExtraResources`](example/functions/getExtraResources)       | Helper function to retrieve extra resources                                  |
-| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource                  |
-| [`getCompositionEnvVar`](example/functions/getCompositionEnvVar) | Helper function to retrieve an environment variable from the request context |
-| [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name                 |
-| [`include`](example/functions/include)                           | Outputs template as a string                                                 |
+| Name                                                                       | Description                                                                  |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [`randomChoice`](example/inline)                                           | Randomly selects one of a given strings                                      |
+| [`toYaml`](example/functions/toYaml)                                       | Marshals any object into a YAML string                                       |
+| [`fromYaml`](example/functions/fromYaml)                                   | Unmarshals a YAML string into an object                                      |
+| [`getResourceCondition`](example/functions/getResourceCondition)           | Helper function to retrieve conditions of resources                          |
+| [`getComposedResource`](example/functions/getComposedResource)             | Helper function to retrieve observed composed resources                      |
+| [`getCompositeResource`](example/functions/getCompositeResource)           | Helper function to retrieve the observed composite resource                  |
+| [`getExtraResources`](example/functions/getExtraResources)                 | Helper function to retrieve extra resources                                  |
+| [`getCompositeResource`](example/functions/getCompositeResource)           | Helper function to retrieve the observed composite resource                  |
+| [`getCompositionEnvironment`](example/functions/getCompositionEnvironment) | Helper function to retrieve an environment variable from the request context |
+| [`setResourceNameAnnotation`](example/inline)                              | Returns the special resource-name annotation with given name                 |
+| [`include`](example/functions/include)                                     | Outputs template as a string                                                 |
 
 ## Developing this function
 

@@ -582,7 +582,7 @@ func Test_getExtraResources(t *testing.T) {
 	}
 }
 
-func Test_getCompositionEnvVar(t *testing.T) {
+func Test_getCompositionEnvironment(t *testing.T) {
 	type args struct {
 		req  map[string]any
 		name string
@@ -689,14 +689,14 @@ func Test_getCompositionEnvVar(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			rsp, err := getCompositionEnvVar(tc.args.req, tc.args.name)
+			rsp, err := getCompositionEnvironment(tc.args.req, tc.args.name)
 
 			if diff := cmp.Diff(tc.want.rsp, rsp, protocmp.Transform()); diff != "" {
-				t.Errorf("%s\ngetCompositionEnvVar(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+				t.Errorf("%s\ngetCompositionEnvironment(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
 			}
 
 			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
-				t.Errorf("%s\ntgetCompositionEnvVar(...): -want err, +got err:\n%s", tc.reason, diff)
+				t.Errorf("%s\ntgetCompositionEnvironment(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
 		})
 	}
