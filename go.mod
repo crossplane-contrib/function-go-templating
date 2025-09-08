@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/alecthomas/kong v1.12.1
 	github.com/crossplane/crossplane-runtime v1.20.0
-	github.com/crossplane/function-sdk-go v0.4.0
+	github.com/crossplane/function-sdk-go v0.5.0-rc.0.0.20250905234801-5da66ec948fa
 	github.com/google/go-cmp v0.7.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v3 v3.0.1
@@ -84,5 +84,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-replace github.com/crossplane/function-sdk-go => github.com/tenitski/function-sdk-go v0.0.0-20250723012926-634ed8aecb6f

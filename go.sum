@@ -30,6 +30,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46t
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crossplane/crossplane-runtime v1.20.0 h1:I54uipRIecqZyms+vz1J/l62yjVQ7HV5w+Nh3RMrUtc=
 github.com/crossplane/crossplane-runtime v1.20.0/go.mod h1:lfV1VJenDc9PNVLxDC80YjPoTm+JdSZ13xlS2h37Dvg=
+github.com/crossplane/function-sdk-go v0.5.0-rc.0.0.20250905234801-5da66ec948fa h1:kkS4RdO3bQj3dxxi3xHxSONyy03xBofDPHbiTZELq1s=
+github.com/crossplane/function-sdk-go v0.5.0-rc.0.0.20250905234801-5da66ec948fa/go.mod h1:fEwSBgMH6+kicaBeOWz6PZRwhjLg4tu9QEDeP/9O2yE=
 github.com/crossplane/upjet v1.4.1-0.20240911184956-3afbb7796d46 h1:2IH1YPTBrNmBj0Z1OCjEBTrQCuRaLutZbWLaswFeCFQ=
 github.com/crossplane/upjet v1.4.1-0.20240911184956-3afbb7796d46/go.mod h1:wkdZf/Cvhr6PI30VdHIOjg4dX39Z5uijqnLWFk5PbGM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -199,8 +201,6 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/tenitski/function-sdk-go v0.0.0-20250723012926-634ed8aecb6f h1:nd4AzNTeKSDA/WKshp+G/1Y+MyCPfsHV9zsiVd97SNI=
-github.com/tenitski/function-sdk-go v0.0.0-20250723012926-634ed8aecb6f/go.mod h1:fEwSBgMH6+kicaBeOWz6PZRwhjLg4tu9QEDeP/9O2yE=
 github.com/tmccombs/hcl2json v0.3.3 h1:+DLNYqpWE0CsOQiEZu+OZm5ZBImake3wtITYxQ8uLFQ=
 github.com/tmccombs/hcl2json v0.3.3/go.mod h1:Y2chtz2x9bAeRTvSibVRVgbLJhLJXKlUeIvjeVdnm4w=
 github.com/upbound/provider-aws v1.14.0 h1:DDUdlMp+dNlFXXlhsGdCvQD7qFdT1AsEcaqlRU3BO14=
