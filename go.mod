@@ -1,6 +1,8 @@
 module github.com/crossplane-contrib/function-go-templating
 
-go 1.23.8
+go 1.24
+
+toolchain go1.24.5
 
 require (
 	dario.cat/mergo v1.0.2
@@ -82,3 +84,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/crossplane/function-sdk-go => github.com/tenitski/function-sdk-go v0.0.0-20250723012926-634ed8aecb6f
