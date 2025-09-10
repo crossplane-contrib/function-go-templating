@@ -331,6 +331,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		rsp.Requirements = requirements
 	}
 
+	if len(req.ExtraResources) > 0 {
+		err = mergeExtraResourcesToContext(req, rsp)
+		if err != nil {
+			return rsp, nil
+		}
+	}
+
 	f.log.Debug("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil

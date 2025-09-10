@@ -54,11 +54,13 @@ metadata:
 	claimConditions            = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"TestCondition","status":"False","reason":"InstallFail","message":"failed to install","target":"ClaimAndComposite"},{"type":"ConditionTrue","status":"True","reason":"this condition is true","message":"we are true","target":"Composite"},{"type":"DatabaseReady","status":"True","reason":"Ready","message":"Database is ready"}]}`
 	claimConditionsReservedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"Ready","status":"False","reason":"InstallFail","message":"I am using a reserved Condition","target":"ClaimAndComposite"}]}`
 
+	extraResource  = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}`
 	extraResources = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{"key": "value"}},"yet-another-cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"foo"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
 	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
+
 	key       = "userkey/go-template"
 	path      = "testdata/templates"
 	wrongPath = "testdata/wrong"
@@ -1233,6 +1235,164 @@ func TestRunFunction(t *testing.T) {
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"AddExtraResourcesToContext": {
+			reason: "The Function should add extra resources to context.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResource},
+						}),
+					ExtraResources: map[string]*fnv1.Resources{
+						"cool-extra-resource": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CoolExtraResource","metadata":{"name":"cool-extra-resource"},"spec":{}}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Context: resource.MustStructJSON(
+						`{
+							"apiextensions.crossplane.io/extra-resources": {
+								"cool-extra-resource": {
+								    "items": [
+									    {
+											"resource": {
+												"apiVersion": "example.org/v1",
+												"kind": "CoolExtraResource",
+												"metadata": {
+													"name": "cool-extra-resource"
+												},
+												"spec": {}
+											}
+										}
+									]
+								}
+							}
+						}`,
+					),
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON("{}"),
+						},
+					},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"MergeExtraResourcesToContext": {
+			reason: "The Function should merge extra resources into context.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResource},
+						}),
+					Context: resource.MustStructJSON(`{
+						"apiextensions.crossplane.io/extra-resources": {
+							"existing-extra-resource": {
+							    "items": [
+									{
+										"resource": {
+											"apiVersion": "example.org/v1",
+											"kind": "CoolExtraResource",
+											"metadata": {
+												"name": "existing-extra-resource"
+											},
+											"spec": {}
+										}
+									}
+								]
+							}
+						}
+					}`),
+					ExtraResources: map[string]*fnv1.Resources{
+						"cool-extra-resource": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CoolExtraResource","metadata":{"name":"cool-extra-resource"},"spec":{}}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Context: resource.MustStructJSON(
+						`{
+							"apiextensions.crossplane.io/extra-resources": {
+								"existing-extra-resource": {
+									"items": [
+										{
+											"resource": {
+												"apiVersion": "example.org/v1",
+												"kind": "CoolExtraResource",
+												"metadata": {
+													"name": "existing-extra-resource"
+												},
+												"spec": {}
+											}
+										}
+									]
+								},
+								"cool-extra-resource": {
+								    "items": [
+									    {
+											"resource": {
+												"apiVersion": "example.org/v1",
+												"kind": "CoolExtraResource",
+												"metadata": {
+													"name": "cool-extra-resource"
+												},
+												"spec": {}
+											}
+										}
+									]
+								}
+							}
+						}`,
+					),
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON("{}"),
+						},
+					},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
 						},
 					},
 				},
