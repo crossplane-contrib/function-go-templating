@@ -22,15 +22,16 @@ const recursionMaxNums = 1000
 
 var funcMaps = []template.FuncMap{
 	{
-		"randomChoice":              randomChoice,
-		"toYaml":                    toYaml,
-		"fromYaml":                  fromYaml,
-		"getResourceCondition":      getResourceCondition,
-		"setResourceNameAnnotation": setResourceNameAnnotation,
-		"getComposedResource":       getComposedResource,
-		"getCompositeResource":      getCompositeResource,
-		"getExtraResources":         getExtraResources,
-		"getCredentialData":         getCredentialData,
+		"randomChoice":                 randomChoice,
+		"toYaml":                       toYaml,
+		"fromYaml":                     fromYaml,
+		"getResourceCondition":         getResourceCondition,
+		"setResourceNameAnnotation":    setResourceNameAnnotation,
+		"getComposedResource":          getComposedResource,
+		"getCompositeResource":         getCompositeResource,
+		"getExtraResources":            getExtraResources,
+		"getExtraResourcesFromContext": getExtraResourcesFromContext,
+		"getCredentialData":            getCredentialData,
 	},
 }
 
@@ -141,6 +142,16 @@ func getCompositeResource(req map[string]any) map[string]any {
 func getExtraResources(req map[string]any, name string) []any {
 	var ers []any
 	path := fmt.Sprintf("extraResources[%s].items", name)
+	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
+		return nil
+	}
+
+	return ers
+}
+
+func getExtraResourcesFromContext(req map[string]any, name string) []any {
+	var ers []any
+	path := fmt.Sprintf("context[%s][%s].items", extraResourcesContextKey, name)
 	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
 		return nil
 	}

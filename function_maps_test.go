@@ -583,6 +583,94 @@ func Test_getExtraResources(t *testing.T) {
 	}
 }
 
+func Test_getExtraResourcesFromContext(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp []any
+	}
+
+	completeResource := map[string]any{
+		"apiVersion": "dbforpostgresql.azure.upbound.io/v1beta1",
+		"kind":       "FlexibleServer",
+		"spec": map[string]any{
+			"forProvider": map[string]any{
+				"storageMb": "32768",
+			},
+		},
+		"status": map[string]any{
+			"atProvider": map[string]any{
+				"id": "abcdef",
+			},
+		},
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveCompleteResource": {
+			reason: "Should successfully retrieve the complete resource",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/extra-resources": map[string]any{
+							"flexserver": map[string]any{
+								"items": []any{
+									completeResource,
+								},
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{
+				rsp: []any{
+					completeResource,
+				},
+			},
+		},
+		"ResourceNotFound": {
+			reason: "Should return empty list if no extra resources are found",
+			args: args{
+				req: map[string]any{
+					"context": map[string]any{
+						"apiextensions.crossplane.io/extra-resources": map[string]any{
+							"flexserver": map[string]any{
+								"items": []any{},
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{rsp: []any{}},
+		},
+		"NoExtraResources": {
+			reason: "Should return nil if no extra resources are available",
+			args: args{
+				req:  map[string]any{},
+				name: "flexserver",
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getExtraResourcesFromContext(tc.args.req, tc.args.name)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetExtraResourcesFromContext(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
 func Test_getCredentialData(t *testing.T) {
 	type args struct {
 		req *fnv1.RunFunctionRequest
