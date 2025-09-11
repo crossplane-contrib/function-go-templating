@@ -1138,6 +1138,36 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
+		"InvalidTemplateOption": {
+			reason: "The Function should return error when an invalid option is provided.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source:  v1beta1.InlineSource,
+							Inline:  &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+							Options: &[]string{"missingoption=nothing"},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot apply template options: panic occurred while applying template options: unrecognized option: missingoption=nothing",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
 		"CompositeResourceReadyTrue": {
 			reason: "The Function should return desired composite resource with True ready state.",
 			args: args{
