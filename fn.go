@@ -77,6 +77,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
+	if in.Options != nil {
+		f.log.Debug("setting template options", "options", *in.Options)
+		tmpl = tmpl.Option(*in.Options...)
+	}
+
 	reqMap, err := convertToMap(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot convert request to map"))

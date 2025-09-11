@@ -24,6 +24,7 @@ import (
 var (
 	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
 	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
+	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
@@ -1374,6 +1375,36 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1.Resource{
 							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"},"phase":"Updating","newField":"added"}}`),
 							Ready:    2,
+						},
+					},
+				},
+			},
+		},
+		"TemplateOptionsMissingKeyError": {
+			reason: "The Function should panic if missingkey=error is provided as template option.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source:  v1beta1.InlineSource,
+							Inline:  &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+							Options: &[]string{"missingkey=error"},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
 				},
