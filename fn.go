@@ -139,7 +139,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					context = context[:80] + "..."
 				}
 
-				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: %s: %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
 			}
 
 			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
