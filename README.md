@@ -27,6 +27,8 @@ spec:
         kind: GoTemplate
         source: Inline
         inline:
+          options:
+            - missingkey=error
           template: |
             apiVersion: s3.aws.upbound.io/v1beta1
             kind: Bucket
@@ -68,6 +70,9 @@ This function supports all of Go's [built-in template functions][builtin]. The
 above examples use the `index` function to access keys like `resource-name` that
 contain periods, hyphens and other special characters. Like Helm, this function
 also supports [Sprig template functions][sprig] as well as [additional functions](#additional-functions).
+
+[Template options](https://pkg.go.dev/text/template#Template.Option) can be provided using the `Options`
+property.
 
 To return desired composite resource connection details, include a template that
 produces the special `CompositeConnectionDetails` resource:
