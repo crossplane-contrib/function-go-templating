@@ -1475,7 +1475,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "cannot decode manifest: error converting YAML to JSON: yaml: line 6 (document 1, line 4) near: name: %!@#$%^&*()_+: found character that cannot start any token",
+							Message:  "cannot decode manifest: error converting YAML to JSON: yaml: line 6 (document 1, line 4) near: 'name: %!@#$%^&*()_+': found character that cannot start any token",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
