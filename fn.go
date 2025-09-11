@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -42,6 +44,13 @@ type Function struct {
 
 	log  logging.Logger
 	fsys fs.FS
+}
+
+type YamlErrorContext struct {
+	RelLine int
+	AbsLine int
+	Message string
+	Context string
 }
 
 const (
@@ -96,14 +105,34 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	// Parse the rendered manifests.
 	var objs []*unstructured.Unstructured
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewBufferString(buf.String()), 1024)
+	data := buf.String()
+	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewBufferString(data), 1024)
+
+	lines := strings.Split(data, "\n")
+	startLine := moveToNextDoc(lines, 1)
+	docIndex := 0
+
 	for {
 		u := &unstructured.Unstructured{}
 		if err := decoder.Decode(&u); err != nil {
 			if err == io.EOF {
 				break
 			}
-			response.Fatal(rsp, errors.Wrap(err, "cannot decode manifest"))
+
+			var newErr error
+			yamlErr := getYamlErrorContextFromErr(err, startLine, lines)
+			if yamlErr == (YamlErrorContext{}) {
+				newErr = err
+			} else {
+				context := strings.TrimSpace(yamlErr.Context)
+				if len(context) > 80 {
+					context = context[:80] + "..."
+				}
+
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+			}
+
+			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
 			return rsp, nil
 		}
 
@@ -121,6 +150,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 
 		objs = append(objs, u)
+
+		startLine = moveToNextDoc(lines, startLine)
+		docIndex++
 	}
 
 	// Get the desired composite resource from the request.
@@ -306,4 +338,39 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	}
 
 	return mReq, nil
+}
+
+func moveToNextDoc(lines []string, startLine int) int {
+	for i := startLine; i <= len(lines); i++ {
+		if strings.TrimSpace(lines[i-1]) == "---" && i > startLine {
+			return i
+		}
+	}
+	return startLine
+}
+
+func getYamlErrorContextFromErr(err error, startLine int, lines []string) YamlErrorContext {
+	var relLine int
+	n, scanErr := fmt.Sscanf(err.Error(), "error converting YAML to JSON: yaml: line %d:", &relLine)
+	var errMsg string
+	if scanErr == nil && n == 1 {
+		// Extract the rest of the error message after the matched prefix.
+		prefix := fmt.Sprintf("error converting YAML to JSON: yaml: line %d:", relLine)
+		errStr := err.Error()
+		if idx := strings.Index(errStr, prefix); idx != -1 {
+			errMsg = strings.TrimSpace(errStr[idx+len(prefix):])
+		}
+	}
+	if scanErr == nil && n == 1 {
+		absLine := startLine + relLine
+		if absLine-1 < len(lines) && absLine-1 >= 0 {
+			return YamlErrorContext{
+				RelLine: relLine,
+				AbsLine: absLine,
+				Message: errMsg,
+				Context: lines[absLine-1],
+			}
+		}
+	}
+	return YamlErrorContext{}
 }
