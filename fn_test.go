@@ -22,6 +22,14 @@ import (
 )
 
 var (
+	invalidYaml = `
+---
+apiVersion: example.org/v1
+kind: CD
+metadata:
+  name: %!@#$%^&*()_+
+`
+
 	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
 	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
 	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
@@ -1186,6 +1194,45 @@ func TestRunFunction(t *testing.T) {
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"PrintYamlErrorLine": {
+			reason: "The Function should print the line content when invalid YAML is provided.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: invalidYaml},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot decode manifest: error converting YAML to JSON: yaml: line 6 (document 1, line 4) near: 'name: %!@#$%^&*()_+': found character that cannot start any token",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
 						},
 					},
 				},
