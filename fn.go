@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"text/template"
 
 	"dario.cat/mergo"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -75,6 +76,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "invalid function input: cannot parse the provided templates"))
 		return rsp, nil
+	}
+
+	if in.Options != nil {
+		f.log.Debug("setting template options", "options", *in.Options)
+		err = safeApplyTemplateOptions(tmpl, *in.Options)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot apply template options"))
+			return rsp, nil
+		}
 	}
 
 	reqMap, err := convertToMap(req)
@@ -306,4 +316,15 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	}
 
 	return mReq, nil
+}
+
+func safeApplyTemplateOptions(templ *template.Template, options []string) (err error) {
+	defer func() {
+		rec := recover()
+		if rec != nil {
+			err = errors.Errorf("panic occurred while applying template options: %v", rec)
+		}
+	}()
+	templ.Option(options...)
+	return nil
 }
