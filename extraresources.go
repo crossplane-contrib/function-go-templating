@@ -1,7 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"maps"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"github.com/crossplane/function-sdk-go/request"
+	"github.com/crossplane/function-sdk-go/response"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ExtraResourcesRequirements defines the requirements for extra resources.
@@ -23,6 +31,10 @@ type ExtraResourcesRequirement struct {
 	MatchName string `json:"matchName,omitempty"`
 }
 
+const (
+	extraResourcesContextKey = "apiextensions.crossplane.io/extra-resources"
+)
+
 // ToResourceSelector converts the ExtraResourcesRequirement to a fnv1.ResourceSelector.
 func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector {
 	out := &fnv1.ResourceSelector{
@@ -40,4 +52,39 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 		MatchName: e.MatchName,
 	}
 	return out
+}
+
+func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
+	b, err := json.Marshal(req.ExtraResources)
+	if err != nil {
+		return errors.Errorf("cannot marshal %T: %w", req.ExtraResources, err)
+	}
+
+	s := &structpb.Struct{}
+	if err := protojson.Unmarshal(b, s); err != nil {
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.ExtraResources, s, err)
+	}
+
+	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)
+	if exists {
+		merged := mergeStructs(extraResourcesFromContext.GetStructValue(), s)
+		s = merged
+	}
+
+	response.SetContextKey(rsp, extraResourcesContextKey, structpb.NewStructValue(s))
+	return nil
+}
+
+// MergeStructs merges fields from s2 into s1, overwriting s1's fields if keys overlap.
+func mergeStructs(s1, s2 *structpb.Struct) *structpb.Struct {
+	if s1 == nil {
+		return s2
+	}
+	if s2 == nil {
+		return s1
+	}
+	merged := s1.AsMap()
+	maps.Copy(merged, s2.AsMap())
+	result, _ := structpb.NewStruct(merged)
+	return result
 }
