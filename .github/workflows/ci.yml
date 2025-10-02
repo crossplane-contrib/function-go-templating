@@ -169,7 +169,7 @@ jobs:
         run: "./crossplane --verbose xpkg push --package-files $(echo *.xpkg|tr ' ' ,) ${{ env.XPKG }}:${{ env.XPKG_VERSION }}"
 
       - name: Login to GHCR
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
