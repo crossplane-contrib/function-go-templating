@@ -1178,7 +1178,6 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
-<<<<<<< HEAD
 		"CompositeResourceReadyTrue": {
 			reason: "The Function should return desired composite resource with True ready state.",
 			args: args{
@@ -1421,8 +1420,6 @@ func TestRunFunction(t *testing.T) {
 				},
 			},
 		},
-=======
->>>>>>> main
 		"TemplateOptionsMissingKeyError": {
 			reason: "The Function should panic if missingkey=error is provided as template option.",
 			args: args{

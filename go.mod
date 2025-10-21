@@ -1,10 +1,6 @@
 module github.com/crossplane-contrib/function-go-templating
 
-<<<<<<< HEAD
 go 1.24.9
-=======
-go 1.23.12
->>>>>>> main
 
 require (
 	dario.cat/mergo v1.0.2
@@ -15,17 +11,10 @@ require (
 	github.com/google/go-cmp v0.7.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
-<<<<<<< HEAD
 	k8s.io/api v0.33.0
 	k8s.io/apimachinery v0.33.0
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/controller-tools v0.18.0
-=======
-	k8s.io/api v0.31.0
-	k8s.io/apimachinery v0.31.0
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
-	sigs.k8s.io/controller-tools v0.16.0
->>>>>>> main
 )
 
 require (
