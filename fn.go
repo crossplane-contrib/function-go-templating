@@ -18,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -134,12 +134,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			if yamlErr == (YamlErrorContext{}) {
 				newErr = err
 			} else {
-				context := strings.TrimSpace(yamlErr.Context)
-				if len(context) > 80 {
-					context = context[:80] + "..."
+				ctx := strings.TrimSpace(yamlErr.Context)
+				if len(ctx) > 80 {
+					ctx = ctx[:80] + "..."
 				}
 
-				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, ctx, yamlErr.Message)
 			}
 
 			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
@@ -187,7 +187,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
+	requirements := &fnv1.Requirements{Resources: make(map[string]*fnv1.ResourceSelector)}
 
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
@@ -274,11 +274,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					return rsp, nil
 				}
 				for k, v := range ers {
-					if _, found := requirements.ExtraResources[k]; found {
+					if _, found := requirements.Resources[k]; found {
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					requirements.ExtraResources[k] = v.ToResourceSelector()
+					requirements.Resources[k] = v.ToResourceSelector()
 				}
 			default:
 				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
@@ -327,11 +327,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if len(requirements.ExtraResources) > 0 {
+	if len(requirements.Resources) > 0 {
 		rsp.Requirements = requirements
 	}
 
-	if len(req.ExtraResources) > 0 {
+	if len(req.RequiredResources) > 0 {
 		err = mergeExtraResourcesToContext(req, rsp)
 		if err != nil {
 			return rsp, nil
