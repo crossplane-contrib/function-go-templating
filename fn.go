@@ -187,7 +187,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1.Requirements{Resources: make(map[string]*fnv1.ResourceSelector)}
+	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
 
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
@@ -310,11 +310,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					return rsp, nil
 				}
 				for k, v := range ers {
-					if _, found := requirements.Resources[k]; found {
+					if _, found := requirements.ExtraResources[k]; found {
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					requirements.Resources[k] = v.ToResourceSelector()
+					requirements.ExtraResources[k] = v.ToResourceSelector()
 				}
 			default:
 				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
@@ -354,7 +354,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if len(requirements.Resources) > 0 {
+	if len(requirements.ExtraResources) > 0 {
 		rsp.Requirements = requirements
 	}
 

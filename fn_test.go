@@ -1051,7 +1051,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
@@ -1539,7 +1539,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
@@ -1634,7 +1634,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						Resources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
