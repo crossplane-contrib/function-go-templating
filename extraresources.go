@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"maps"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
@@ -55,14 +55,14 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 }
 
 func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
-	b, err := json.Marshal(req.ExtraResources)
+	b, err := json.Marshal(req.RequiredResources)
 	if err != nil {
-		return errors.Errorf("cannot marshal %T: %w", req.ExtraResources, err)
+		return errors.Errorf("cannot marshal %T: %w", req.RequiredResources, err)
 	}
 
 	s := &structpb.Struct{}
 	if err := protojson.Unmarshal(b, s); err != nil {
-		return errors.Errorf("cannot unmarshal %T into %T: %w", req.ExtraResources, s, err)
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.RequiredResources, s, err)
 	}
 
 	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)
