@@ -366,8 +366,6 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 		r, ok := mReq["requiredResources"]
 		if ok {
 			mReq["extraResources"] = r
-		} else {
-			mReq["extraResources"] = []any{}
 		}
 	}
 
