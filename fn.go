@@ -331,8 +331,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		rsp.Requirements = requirements
 	}
 
-	if len(req.RequiredResources) > 0 {
+	if len(req.ExtraResources) > 0 { // nolint:staticcheck // need to support existing clients
 		err = mergeExtraResourcesToContext(req, rsp)
+		if err != nil {
+			return rsp, nil
+		}
+	}
+
+	if len(req.RequiredResources) > 0 {
+		err = mergeRequiredResourcesToContext(req, rsp)
 		if err != nil {
 			return rsp, nil
 		}
@@ -352,6 +359,16 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	var mReq map[string]any
 	if err := json.Unmarshal(jReq, &mReq); err != nil {
 		return nil, errors.Wrap(err, "cannot unmarshal json to map[string]any")
+	}
+
+	_, ok := mReq["extraResources"]
+	if !ok {
+		r, ok := mReq["requiredResources"]
+		if ok {
+			mReq["extraResources"] = r
+		} else {
+			mReq["extraResources"] = []any{}
+		}
 	}
 
 	return mReq, nil
