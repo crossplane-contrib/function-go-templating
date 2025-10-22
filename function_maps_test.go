@@ -533,7 +533,7 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should successfully retrieve the complete resource",
 			args: args{
 				req: map[string]any{
-					"extraResources": map[string]any{
+					"requiredResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{
 								completeResource,
@@ -553,7 +553,7 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should return empty list if no extra resources are found",
 			args: args{
 				req: map[string]any{
-					"extraResources": map[string]any{
+					"requiredResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{},
 						},

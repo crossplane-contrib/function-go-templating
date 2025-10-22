@@ -29,6 +29,8 @@ type ExtraResourcesRequirement struct {
 	// MatchName defines the name to match the resource, if MatchLabels is
 	// empty.
 	MatchName string `json:"matchName,omitempty"`
+	// Namespace defines the namespace of the resource to match, leave empty for cluster-scoped.
+	Namespace string `json:"namespace,omitempty"`
 }
 
 const (
@@ -51,10 +53,35 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 	out.Match = &fnv1.ResourceSelector_MatchName{
 		MatchName: e.MatchName,
 	}
+
+	if e.Namespace != "" {
+		*out.Namespace = e.Namespace
+	}
 	return out
 }
 
 func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
+	b, err := json.Marshal(req.ExtraResources) //nolint:staticcheck
+	if err != nil {
+		return errors.Errorf("cannot marshal %T: %w", req.ExtraResources, err) //nolint:staticcheck
+	}
+
+	s := &structpb.Struct{}
+	if err := protojson.Unmarshal(b, s); err != nil {
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.ExtraResources, s, err) //nolint:staticcheck
+	}
+
+	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)
+	if exists {
+		merged := mergeStructs(extraResourcesFromContext.GetStructValue(), s)
+		s = merged
+	}
+
+	response.SetContextKey(rsp, extraResourcesContextKey, structpb.NewStructValue(s))
+	return nil
+}
+
+func mergeRequiredResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
 	b, err := json.Marshal(req.RequiredResources)
 	if err != nil {
 		return errors.Errorf("cannot marshal %T: %w", req.RequiredResources, err)
