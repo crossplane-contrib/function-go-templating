@@ -120,7 +120,7 @@ jobs:
         run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
 
       - name: Upload Single-Platform Package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: package-${{ matrix.arch }}
           path: "*.xpkg"
@@ -139,7 +139,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Download Single-Platform Packages
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: .
           merge-multiple: true
