@@ -1,7 +1,7 @@
 package main
 
 import (
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/response"
@@ -43,12 +43,12 @@ func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...Targeted
 // transformCondition converts a TargetedCondition to be compatible with the Protobuf SDK
 func transformCondition(tc TargetedCondition) *fnv1.Condition {
 	c := &fnv1.Condition{
-		Type:   string(tc.Condition.Type),
-		Reason: string(tc.Condition.Reason),
+		Type:   string(tc.Type),
+		Reason: string(tc.Reason),
 		Target: transformTarget(tc.Target),
 	}
 
-	switch tc.Condition.Status {
+	switch tc.Status {
 	case corev1.ConditionTrue:
 		c.Status = fnv1.Status_STATUS_CONDITION_TRUE
 	case corev1.ConditionFalse:
