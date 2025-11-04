@@ -2,10 +2,7 @@
 package main
 
 import (
-	"os"
-
 	"github.com/alecthomas/kong"
-
 	"github.com/crossplane/function-sdk-go"
 )
 
@@ -18,6 +15,8 @@ type CLI struct {
 	TLSCertsDir        string `help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)" env:"TLS_SERVER_CERTS_DIR"`
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
 	MaxRecvMessageSize int    `help:"Maximum size of received messages in MB." default:"4"`
+
+	DefaultSource string `help:"Default template source to use when input is not provided to the function." default:"" env:"FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"`
 }
 
 // Run this Function.
@@ -31,7 +30,7 @@ func (c *CLI) Run() error {
 		&Function{
 			log:           log,
 			fsys:          &osFS{},
-			defaultSource: os.Getenv("FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"),
+			defaultSource: c.DefaultSource,
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
