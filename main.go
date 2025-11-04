@@ -18,6 +18,7 @@ type CLI struct {
 	TLSCertsDir        string `env:"TLS_SERVER_CERTS_DIR"                                                                           help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)"`
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
 	MaxRecvMessageSize int    `default:"4"                                                                                          help:"Maximum size of received messages in MB."`
+	DefaultSource string `help:"Default template source to use when input is not provided to the function." default:"" env:"FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"`
 }
 
 // Run this Function.
@@ -31,7 +32,7 @@ func (c *CLI) Run() error {
 		&Function{
 			log:           log,
 			fsys:          &osFS{},
-			defaultSource: os.Getenv("FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"),
+			defaultSource: c.DefaultSource,
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),
