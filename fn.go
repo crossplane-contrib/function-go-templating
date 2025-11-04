@@ -18,17 +18,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
-
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 // osFS is a dead-simple implementation of [io/fs.FS] that just wraps around
@@ -43,8 +41,9 @@ func (*osFS) Open(name string) (fs.File, error) {
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
-	log  logging.Logger
-	fsys fs.FS
+	log           logging.Logger
+	fsys          fs.FS
+	defaultSource string
 }
 
 type YamlErrorContext struct {
@@ -71,6 +70,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	if err := request.GetInput(req, in); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
+	}
+	if in.Source == "" && f.defaultSource != "" {
+		in.Source = v1beta1.FileSystemSource
+		in.FileSystem = &v1beta1.TemplateSourceFileSystem{
+			DirPath: f.defaultSource,
+		}
 	}
 
 	tg, err := NewTemplateSourceGetter(f.fsys, req.GetContext(), in)
