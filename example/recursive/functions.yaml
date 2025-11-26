@@ -3,4 +3,4 @@ kind: Function
 metadata:
   name: function-go-templating
 spec:
-  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.0
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.1
