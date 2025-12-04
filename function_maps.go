@@ -143,7 +143,10 @@ func getExtraResources(req map[string]any, name string) []any {
 	var ers []any
 	path := fmt.Sprintf("requiredResources[%s].items", name)
 	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
-		return nil
+		path := fmt.Sprintf("extraResources[%s].items", name)
+		if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
+			return nil
+		}
 	}
 
 	return ers

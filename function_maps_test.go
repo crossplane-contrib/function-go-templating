@@ -549,6 +549,26 @@ func Test_getExtraResources(t *testing.T) {
 				},
 			},
 		},
+		"RetrieveExtraResource": {
+			reason: "Should successfully retrieve the resource from extraResources",
+			args: args{
+				req: map[string]any{
+					"extraResources": map[string]any{
+						"flexserver": map[string]any{
+							"items": []any{
+								completeResource,
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{
+				rsp: []any{
+					completeResource,
+				},
+			},
+		},
 		"ResourceNotFound": {
 			reason: "Should return empty list if no extra resources are found",
 			args: args{
