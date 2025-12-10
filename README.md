@@ -27,6 +27,8 @@ spec:
         kind: GoTemplate
         source: Inline
         inline:
+          options:
+            - missingkey=error
           template: |
             apiVersion: s3.aws.upbound.io/v1beta1
             kind: Bucket
@@ -68,6 +70,9 @@ This function supports all of Go's [built-in template functions][builtin]. The
 above examples use the `index` function to access keys like `resource-name` that
 contain periods, hyphens and other special characters. Like Helm, this function
 also supports [Sprig template functions][sprig] as well as [additional functions](#additional-functions).
+
+[Template options](https://pkg.go.dev/text/template#Template.Option) can be provided using the `Options`
+property.
 
 To return desired composite resource connection details, include a template that
 produces the special `CompositeConnectionDetails` resource:
@@ -168,6 +173,29 @@ example:
 #
 {{- end }}
 ```
+
+Additionally, the function will store retreived extraResources in the function
+context under the `apiextensions.crossplane.io/extra-resources` key, so that
+extra resources are passed down the pipeline.
+```json5
+{
+  "context": {
+    "apiextensions.crossplane.io/extra-resources": {
+      "some-foo-by-name": [
+        // ... the requested bucket if found, empty otherwise ...
+      ],
+      "some-foo-by-labels": [
+        // ... the requested buckets if found, empty otherwise ...
+      ],
+      // ... any other requested extra resources ...
+    }
+  }
+  
+}
+```
+If a function previously set extra resources under the key in the context,
+the function will merge the new extra resources in, so both can be obtained
+in the next pipeline step.
 
 ### Writing to the Context
 
@@ -321,19 +349,24 @@ conditions:
   target: CompositeAndClaim
 ```
 
-## Additional functions
+## Additional Functions
 
-| Name                                                             | Description                                                  |
-|------------------------------------------------------------------|--------------------------------------------------------------|
-| [`randomChoice`](example/inline)                                 | Randomly selects one of a given strings                      |
-| [`toYaml`](example/functions/toYaml)                             | Marshals any object into a YAML string                       |
-| [`fromYaml`](example/functions/fromYaml)                         | Unmarshals a YAML string into an object                      |
-| [`getResourceCondition`](example/functions/getResourceCondition) | Helper function to retrieve conditions of resources          |
-| [`getComposedResource`](example/functions/getComposedResource)    | Helper function to retrieve observed composed resources      |
-| [`getCompositeResource`](example/functions/getCompositeResource) | Helper function to retrieve the observed composite resource |
-| [`getExtraResources`](example/functions/getExtraResources)       | Helper function to retrieve extra resources                  |
-| [`setResourceNameAnnotation`](example/inline)                    | Returns the special resource-name annotation with given name |
-| [`include`](example/functions/include)                           | Outputs template as a string                                 |
+The following custom template functions are available in addition to Go's built-in and Sprig functions:
+
+| Name                                                                  | Description                                                                 |
+|-----------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| [`randomChoice`](example/inline)                                      | Randomly selects one of a given set of strings.                             |
+| [`toYaml`](example/functions/toYaml)                                  | Marshals any object into a YAML string.                                     |
+| [`fromYaml`](example/functions/fromYaml)                              | Unmarshals a YAML string into an object.                                    |
+| [`getResourceCondition`](example/functions/getResourceCondition)      | Retrieves conditions of resources.                                          |
+| [`getComposedResource`](example/functions/getComposedResource)        | Retrieves observed composed resources.                                      |
+| [`getCompositeResource`](example/functions/getCompositeResource)      | Retrieves the observed composite resource.                                  |
+| [`getExtraResources`](example/functions/getExtraResources)            | Retrieves extra resources.                                                  |
+| [`getExtraResourcesFromContext`](example/functions/getExtraResourcesFromContext) | Retrieves extra resources from the environment context.                     |
+| [`setResourceNameAnnotation`](example/inline)                         | Returns the special resource-name annotation with the given name.            |
+| [`include`](example/functions/include)                                | Outputs a template as a string.                                             |
+
+See the linked examples for usage details.
 
 ## Developing this function
 

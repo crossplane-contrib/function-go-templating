@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"strings"
+	"text/template"
 	"time"
 
 	"dario.cat/mergo"
@@ -45,6 +48,13 @@ type Function struct {
 	log  logging.Logger
 	fsys fs.FS
 	ttl  time.Duration
+}
+
+type YamlErrorContext struct {
+	RelLine int
+	AbsLine int
+	Message string
+	Context string
 }
 
 const (
@@ -88,6 +98,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
+	if in.Options != nil {
+		f.log.Debug("setting template options", "options", *in.Options)
+		err = safeApplyTemplateOptions(tmpl, *in.Options)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot apply template options"))
+			return rsp, nil
+		}
+	}
+
 	reqMap, err := convertToMap(req)
 	if err != nil {
 		response.Fatal(rsp, errors.Wrap(err, "cannot convert request to map"))
@@ -107,14 +126,34 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 
 	// Parse the rendered manifests.
 	var objs []*unstructured.Unstructured
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewBufferString(buf.String()), 1024)
+	data := buf.String()
+	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewBufferString(data), 1024)
+
+	lines := strings.Split(data, "\n")
+	startLine := moveToNextDoc(lines, 1)
+	docIndex := 0
+
 	for {
 		u := &unstructured.Unstructured{}
 		if err := decoder.Decode(&u); err != nil {
 			if err == io.EOF {
 				break
 			}
-			response.Fatal(rsp, errors.Wrap(err, "cannot decode manifest"))
+
+			var newErr error
+			yamlErr := getYamlErrorContextFromErr(err, startLine, lines)
+			if yamlErr == (YamlErrorContext{}) {
+				newErr = err
+			} else {
+				context := strings.TrimSpace(yamlErr.Context)
+				if len(context) > 80 {
+					context = context[:80] + "..."
+				}
+
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+			}
+
+			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
 			return rsp, nil
 		}
 
@@ -132,6 +171,9 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		}
 
 		objs = append(objs, u)
+
+		startLine = moveToNextDoc(lines, startLine)
+		docIndex++
 	}
 
 	// Get the desired composite resource from the request.
@@ -312,6 +354,13 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		rsp.Requirements = requirements
 	}
 
+	if len(req.ExtraResources) > 0 {
+		err = mergeExtraResourcesToContext(req, rsp)
+		if err != nil {
+			return rsp, nil
+		}
+	}
+
 	f.log.Debug("Successfully composed desired resources", "source", in.Source, "count", len(objs))
 
 	return rsp, nil
@@ -329,4 +378,50 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	}
 
 	return mReq, nil
+}
+
+func safeApplyTemplateOptions(templ *template.Template, options []string) (err error) {
+	defer func() {
+		rec := recover()
+		if rec != nil {
+			err = errors.Errorf("panic occurred while applying template options: %v", rec)
+		}
+	}()
+	templ.Option(options...)
+	return nil
+}
+
+func moveToNextDoc(lines []string, startLine int) int {
+	for i := startLine; i <= len(lines); i++ {
+		if strings.TrimSpace(lines[i-1]) == "---" && i > startLine {
+			return i
+		}
+	}
+	return startLine
+}
+
+func getYamlErrorContextFromErr(err error, startLine int, lines []string) YamlErrorContext {
+	var relLine int
+	n, scanErr := fmt.Sscanf(err.Error(), "error converting YAML to JSON: yaml: line %d:", &relLine)
+	var errMsg string
+	if scanErr == nil && n == 1 {
+		// Extract the rest of the error message after the matched prefix.
+		prefix := fmt.Sprintf("error converting YAML to JSON: yaml: line %d:", relLine)
+		errStr := err.Error()
+		if idx := strings.Index(errStr, prefix); idx != -1 {
+			errMsg = strings.TrimSpace(errStr[idx+len(prefix):])
+		}
+	}
+	if scanErr == nil && n == 1 {
+		absLine := startLine + relLine
+		if absLine-1 < len(lines) && absLine-1 >= 0 {
+			return YamlErrorContext{
+				RelLine: relLine,
+				AbsLine: absLine,
+				Message: errMsg,
+				Context: lines[absLine-1],
+			}
+		}
+	}
+	return YamlErrorContext{}
 }

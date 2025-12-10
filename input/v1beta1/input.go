@@ -33,6 +33,8 @@ type GoTemplate struct {
 	TTL string `json:"ttl"`
 	// Environment is the key that defines the location of the templates in the environment
 	Environment *TemplateSourceEnvironment `json:"environment,omitempty"`
+	// Options to set for the template engine. Valid options are documented at https://pkg.go.dev/text/template#Template.Option
+	Options *[]string `json:"options,omitempty"`
 }
 
 type TemplateSource string
