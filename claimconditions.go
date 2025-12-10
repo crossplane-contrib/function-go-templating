@@ -43,12 +43,12 @@ func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...Targeted
 // transformCondition converts a TargetedCondition to be compatible with the Protobuf SDK
 func transformCondition(tc TargetedCondition) *fnv1.Condition {
 	c := &fnv1.Condition{
-		Type:   string(tc.Type),
-		Reason: string(tc.Reason),
+		Type:   string(tc.Condition.Type),
+		Reason: string(tc.Condition.Reason),
 		Target: transformTarget(tc.Target),
 	}
 
-	switch tc.Status {
+	switch tc.Condition.Status {
 	case corev1.ConditionTrue:
 		c.Status = fnv1.Status_STATUS_CONDITION_TRUE
 	case corev1.ConditionFalse:
