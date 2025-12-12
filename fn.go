@@ -18,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
@@ -134,12 +134,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			if yamlErr == (YamlErrorContext{}) {
 				newErr = err
 			} else {
-				context := strings.TrimSpace(yamlErr.Context)
-				if len(context) > 80 {
-					context = context[:80] + "..."
+				ctx := strings.TrimSpace(yamlErr.Context)
+				if len(ctx) > 80 {
+					ctx = ctx[:80] + "..."
 				}
 
-				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, ctx, yamlErr.Message)
 			}
 
 			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
@@ -274,11 +274,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					return rsp, nil
 				}
 				for k, v := range ers {
-					if _, found := requirements.ExtraResources[k]; found {
+					if _, found := requirements.ExtraResources[k]; found { // nolint:staticcheck // need to support Crossplane v1
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					requirements.ExtraResources[k] = v.ToResourceSelector()
+					requirements.ExtraResources[k] = v.ToResourceSelector() // nolint:staticcheck // need to support Crossplane v1
 				}
 			default:
 				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
@@ -327,12 +327,19 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if len(requirements.ExtraResources) > 0 {
+	if len(requirements.ExtraResources) > 0 { // nolint:staticcheck // need to support Crossplane v1
 		rsp.Requirements = requirements
 	}
 
-	if len(req.ExtraResources) > 0 {
+	if len(req.ExtraResources) > 0 { // nolint:staticcheck // need to support Crossplane v1
 		err = mergeExtraResourcesToContext(req, rsp)
+		if err != nil {
+			return rsp, nil
+		}
+	}
+
+	if len(req.RequiredResources) > 0 {
+		err = mergeRequiredResourcesToContext(req, rsp)
 		if err != nil {
 			return rsp, nil
 		}
@@ -352,6 +359,14 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	var mReq map[string]any
 	if err := json.Unmarshal(jReq, &mReq); err != nil {
 		return nil, errors.Wrap(err, "cannot unmarshal json to map[string]any")
+	}
+
+	_, ok := mReq["extraResources"]
+	if !ok {
+		r, ok := mReq["requiredResources"]
+		if ok {
+			mReq["extraResources"] = r
+		}
 	}
 
 	return mReq, nil
