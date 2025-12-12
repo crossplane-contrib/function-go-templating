@@ -139,7 +139,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: inline.template should be provided",
+							Message:  "invalid function input: inline.template or inline.templates should be provided",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -330,6 +330,44 @@ func TestRunFunction(t *testing.T) {
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"ResponseIsReturnedWithTemplatingUsingTheTemplatesField": {
+			reason: "The Function should return the desired composite resource and the templated composed resources.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Templates: []string{cdTmpl}},
 						}),
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{

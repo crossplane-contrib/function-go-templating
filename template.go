@@ -3,6 +3,9 @@ package main
 import (
 	"io/fs"
 	"path/filepath"
+	"strings"
+
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -57,12 +60,18 @@ func (is *InlineSource) GetTemplates() string {
 }
 
 func newInlineSource(in *v1beta1.GoTemplate) (*InlineSource, error) {
-	if in.Inline == nil || in.Inline.Template == "" {
-		return nil, errors.New("inline.template should be provided")
+	if in.Inline == nil || (in.Inline.Template == "" && len(in.Inline.Templates) == 0) {
+		return nil, errors.New("inline.template or inline.templates should be provided")
+	}
+
+	template := strings.Join(in.Inline.Templates, "\n---\n")
+
+	if in.Inline.Template != "" {
+		template = in.Inline.Template
 	}
 
 	return &InlineSource{
-		Template: in.Inline.Template,
+		Template: template,
 	}, nil
 }
 

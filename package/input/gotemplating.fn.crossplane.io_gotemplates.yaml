@@ -58,6 +58,10 @@ spec:
             properties:
               template:
                 type: string
+              templates:
+                items:
+                  type: string
+                type: array
             type: object
           kind:
             description: |-

@@ -51,7 +51,8 @@ const (
 
 // TemplateSourceInline defines the structure of the inline source.
 type TemplateSourceInline struct {
-	Template string `json:"template,omitempty"`
+	Template  string   `json:"template,omitempty"`
+	Templates []string `json:"templates,omitempty"`
 }
 
 // TemplateSourceFileSystem defines the structure of the filesystem source.
