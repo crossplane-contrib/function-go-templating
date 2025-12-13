@@ -58,6 +58,10 @@ spec:
             properties:
               template:
                 type: string
+              templates:
+                items:
+                  type: string
+                type: array
             type: object
           kind:
             description: |-
@@ -69,6 +73,12 @@ spec:
             type: string
           metadata:
             type: object
+          options:
+            description: Options to set for the template engine. Valid options are
+              documented at https://pkg.go.dev/text/template#Template.Option
+            items:
+              type: string
+            type: array
           source:
             description: Source specifies the different types of input sources that
               can be used with this function
