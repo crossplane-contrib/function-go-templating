@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"

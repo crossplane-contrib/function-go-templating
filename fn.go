@@ -18,8 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
