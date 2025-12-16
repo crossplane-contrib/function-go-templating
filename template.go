@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	"google.golang.org/protobuf/types/known/structpb"
 
