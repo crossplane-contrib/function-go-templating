@@ -16,4 +16,4 @@ spec:
         kind: GoTemplate
         source: Inline
         inline:
-          templates: []
+          templates: [] # Kustomize will add the templates here
