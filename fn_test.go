@@ -1498,7 +1498,7 @@ func TestRunFunction(t *testing.T) {
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: extraResource},
 						}),
-					ExtraResources: map[string]*fnv1.Resources{
+					RequiredResources: map[string]*fnv1.Resources{
 						"cool-extra-resource": {
 							Items: []*fnv1.Resource{
 								{

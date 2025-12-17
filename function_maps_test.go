@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
@@ -533,6 +533,26 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should successfully retrieve the complete resource",
 			args: args{
 				req: map[string]any{
+					"requiredResources": map[string]any{
+						"flexserver": map[string]any{
+							"items": []any{
+								completeResource,
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{
+				rsp: []any{
+					completeResource,
+				},
+			},
+		},
+		"RetrieveExtraResource": {
+			reason: "Should successfully retrieve the resource from extraResources",
+			args: args{
+				req: map[string]any{
 					"extraResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{
@@ -553,7 +573,7 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should return empty list if no extra resources are found",
 			args: args{
 				req: map[string]any{
-					"extraResources": map[string]any{
+					"requiredResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{},
 						},

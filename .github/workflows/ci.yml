@@ -14,8 +14,8 @@ on:
 
 env:
   # Common versions
-  GO_VERSION: '1.24.9'
-  GOLANGCI_VERSION: 'v1.62.0'
+  GO_VERSION: '1.24.10'
+  GOLANGCI_VERSION: 'v1.64.8'
   DOCKER_BUILDX_VERSION: 'v0.23.0'
 
   # These environment variables are important to the Crossplane CLI install.sh
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -96,7 +96,7 @@ jobs:
           install: true
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # We ask Docker to use GitHub Action's native caching support to speed up
       # the build, per https://docs.docker.com/build/cache/backends/gha/.
@@ -120,7 +120,7 @@ jobs:
         run: ./crossplane xpkg build --package-file=${{ matrix.arch }}.xpkg --package-root=package/ --embed-runtime-image-tarball=runtime-${{ matrix.arch }}.tar
 
       - name: Upload Single-Platform Package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: package-${{ matrix.arch }}
           path: "*.xpkg"
@@ -136,10 +136,10 @@ jobs:
       - build
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Single-Platform Packages
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           path: .
           merge-multiple: true

@@ -4,14 +4,14 @@ kind: Function
 metadata:
   name: function-auto-ready
 spec:
-  package: xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.5.1
+  package: xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.6.0
 ---
 apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   name: function-go-templating
 spec:
-  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.0
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.2
   runtimeConfigRef:
     name: mount-templates
 ---

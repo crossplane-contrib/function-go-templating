@@ -9,8 +9,8 @@ import (
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -141,9 +141,12 @@ func getCompositeResource(req map[string]any) map[string]any {
 
 func getExtraResources(req map[string]any, name string) []any {
 	var ers []any
-	path := fmt.Sprintf("extraResources[%s].items", name)
+	path := fmt.Sprintf("requiredResources[%s].items", name)
 	if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
-		return nil
+		path := fmt.Sprintf("extraResources[%s].items", name)
+		if err := fieldpath.Pave(req).GetValueInto(path, &ers); err != nil {
+			return nil
+		}
 	}
 
 	return ers
