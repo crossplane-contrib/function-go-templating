@@ -1,24 +1,24 @@
 package main
 
 import (
-	"google.golang.org/protobuf/types/known/structpb"
 	"io/fs"
 	"path/filepath"
 
-	"github.com/crossplane/function-sdk-go/errors"
-
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/crossplane/function-sdk-go/errors"
 )
 
 const dotCharacter = 46
 
-// TemplateGetter interface is used to read templates from different sources
+// TemplateGetter interface is used to read templates from different sources.
 type TemplateGetter interface {
 	// GetTemplates returns the templates from the datasource
 	GetTemplates() string
 }
 
-// NewTemplateSourceGetter returns a TemplateGetter based on the cd source
+// NewTemplateSourceGetter returns a TemplateGetter based on the cd source.
 func NewTemplateSourceGetter(fsys fs.FS, ctx *structpb.Struct, in *v1beta1.GoTemplate) (TemplateGetter, error) {
 	switch in.Source {
 	case v1beta1.InlineSource:
@@ -34,24 +34,24 @@ func NewTemplateSourceGetter(fsys fs.FS, ctx *structpb.Struct, in *v1beta1.GoTem
 	}
 }
 
-// InlineSource is a datasource that reads a template from the composition
+// InlineSource is a datasource that reads a template from the composition.
 type InlineSource struct {
 	Template string
 }
 
-// FileSource is a datasource that reads a template from a folder
+// FileSource is a datasource that reads a template from a folder.
 type FileSource struct {
 	FolderPath string
 	Template   string
 }
 
-// EnvironmentSource is a datasource that reads a template from the environment
+// EnvironmentSource is a datasource that reads a template from the environment.
 type EnvironmentSource struct {
 	Key      string
 	Template string
 }
 
-// GetTemplates returns the inline template
+// GetTemplates returns the inline template.
 func (is *InlineSource) GetTemplates() string {
 	return is.Template
 }
@@ -66,7 +66,7 @@ func newInlineSource(in *v1beta1.GoTemplate) (*InlineSource, error) {
 	}, nil
 }
 
-// GetTemplates returns the templates in the folder
+// GetTemplates returns the templates in the folder.
 func (fs *FileSource) GetTemplates() string {
 	return fs.Template
 }
@@ -97,7 +97,7 @@ func newEnvironmentSource(ctx *structpb.Struct, in *v1beta1.GoTemplate) (*Enviro
 	if in.Environment == nil || in.Environment.Key == "" {
 		return nil, errors.New("environment.key should be provided")
 	}
-	env, ok := ctx.AsMap()["apiextensions.crossplane.io/environment"].(map[string]interface{})
+	env, ok := ctx.AsMap()["apiextensions.crossplane.io/environment"].(map[string]any)
 	if !ok {
 		return nil, errors.New("cannot read tmpl from the environment: apiextensions.crossplane.io/environment key does not exist in context")
 	}
@@ -105,15 +105,13 @@ func newEnvironmentSource(ctx *structpb.Struct, in *v1beta1.GoTemplate) (*Enviro
 	if !ok {
 		return nil, errors.Errorf("cannot read tmpl from the environment: key: %s does not exist", in.Environment.Key)
 	}
-	switch tpl.(type) {
-	case string:
-		break
-	default:
+
+	t, err := tpl.(string)
+	if !err {
 		return nil, errors.Errorf("cannot read tmpl from the environment: key: %s value is not a string", in.Environment.Key)
 	}
-
 	return &EnvironmentSource{
-		Template: tpl.(string),
+		Template: t,
 	}, nil
 }
 

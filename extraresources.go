@@ -5,11 +5,12 @@ import (
 	"maps"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ExtraResourcesRequirements defines the requirements for extra resources.
@@ -61,14 +62,14 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 }
 
 func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
-	b, err := json.Marshal(req.ExtraResources) //nolint:staticcheck
+	b, err := json.Marshal(req.GetExtraResources()) //nolint:staticcheck // retain support for v1 interface
 	if err != nil {
-		return errors.Errorf("cannot marshal %T: %w", req.ExtraResources, err) //nolint:staticcheck
+		return errors.Errorf("cannot marshal %T: %w", req.GetExtraResources(), err) //nolint:staticcheck // retain support for v1 interface
 	}
 
 	s := &structpb.Struct{}
 	if err := protojson.Unmarshal(b, s); err != nil {
-		return errors.Errorf("cannot unmarshal %T into %T: %w", req.ExtraResources, s, err) //nolint:staticcheck
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.GetExtraResources(), s, err) //nolint:staticcheck // retain support for v1 interface
 	}
 
 	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)
@@ -82,14 +83,14 @@ func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFun
 }
 
 func mergeRequiredResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
-	b, err := json.Marshal(req.RequiredResources)
+	b, err := json.Marshal(req.GetRequiredResources())
 	if err != nil {
-		return errors.Errorf("cannot marshal %T: %w", req.RequiredResources, err)
+		return errors.Errorf("cannot marshal %T: %w", req.GetRequiredResources(), err)
 	}
 
 	s := &structpb.Struct{}
 	if err := protojson.Unmarshal(b, s); err != nil {
-		return errors.Errorf("cannot unmarshal %T into %T: %w", req.RequiredResources, s, err)
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.GetRequiredResources(), s, err)
 	}
 
 	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)

@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
-
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 var (
@@ -763,7 +761,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be one of CompositeConnectionDetails, Context or ExtraResources",
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaAPIVersion + "\" - must be one of CompositeConnectionDetails, Context or ExtraResources",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1194,7 +1192,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
+							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},

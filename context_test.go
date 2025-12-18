@@ -4,16 +4,17 @@ import (
 	"testing"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
-	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"github.com/crossplane/function-sdk-go/resource"
 )
 
 func TestMergeContext(t *testing.T) {
 	type args struct {
-		val map[string]interface{}
+		val map[string]any
 		req *fnv1.RunFunctionRequest
 	}
 	type want struct {
@@ -32,10 +33,10 @@ func TestMergeContext(t *testing.T) {
 				req: &fnv1.RunFunctionRequest{
 					Context: nil,
 				},
-				val: map[string]interface{}{"hello": "world"},
+				val: map[string]any{"hello": "world"},
 			},
 			want: want{
-				us:  map[string]interface{}{"hello": "world"},
+				us:  map[string]any{"hello": "world"},
 				err: nil,
 			},
 		},
@@ -45,7 +46,7 @@ func TestMergeContext(t *testing.T) {
 				req: &fnv1.RunFunctionRequest{
 					Context: resource.MustStructJSON(`{"apiextensions.crossplane.io/environment":{"complex":{"a":"b","c":{"d":"e","f":"1","overWrite": "fromContext"}}}}`),
 				},
-				val: map[string]interface{}{
+				val: map[string]any{
 					"newKey": "newValue",
 					"apiextensions.crossplane.io/environment": map[string]any{
 						"complex": map[string]any{
@@ -57,7 +58,7 @@ func TestMergeContext(t *testing.T) {
 				},
 			},
 			want: want{
-				us: map[string]interface{}{
+				us: map[string]any{
 					"apiextensions.crossplane.io/environment": map[string]any{
 						"complex": map[string]any{
 							"a": "b",
@@ -68,7 +69,8 @@ func TestMergeContext(t *testing.T) {
 							},
 						},
 					},
-					"newKey": "newValue"},
+					"newKey": "newValue",
+				},
 				err: nil,
 			},
 		},
@@ -89,5 +91,4 @@ func TestMergeContext(t *testing.T) {
 			}
 		})
 	}
-
 }

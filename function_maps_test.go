@@ -5,11 +5,11 @@ import (
 	"testing"
 	"text/template"
 
+	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
@@ -37,10 +37,10 @@ complexDictionary:
   - def`,
 			},
 			want: want{
-				rsp: map[string]interface{}{
-					"complexDictionary": map[string]interface{}{
+				rsp: map[string]any{
+					"complexDictionary": map[string]any{
 						"scalar1": true,
-						"list": []interface{}{
+						"list": []any{
 							"abc",
 							"def",
 						},
@@ -92,10 +92,10 @@ func Test_toYaml(t *testing.T) {
 		"MarshalYaml": {
 			reason: "Should return marshalled yaml",
 			args: args{
-				val: map[string]interface{}{
-					"complexDictionary": map[string]interface{}{
+				val: map[string]any{
+					"complexDictionary": map[string]any{
 						"scalar1": true,
-						"list": []interface{}{
+						"list": []any{
 							"abc",
 							"def",
 						},
