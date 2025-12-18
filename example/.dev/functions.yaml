@@ -10,4 +10,4 @@ metadata:
     render.crossplane.io/runtime: Development
     render.crossplane.io/runtime-development-target: localhost:9443
 spec:
-  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.2
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.3
