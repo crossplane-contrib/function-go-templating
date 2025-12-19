@@ -92,10 +92,11 @@ data:
   server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
 ```
 
-To mark a desired composed resource as ready, use the
+To mark a desired composed resource or composite resource as ready or not ready, use the
 `gotemplating.fn.crossplane.io/ready` annotation:
 
 ```yaml
+# Composed resource
 apiVersion: s3.aws.upbound.io/v1beta1
 kind: Bucket
 metadata:
@@ -103,6 +104,14 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: bucket
     gotemplating.fn.crossplane.io/ready: "True"
 spec: {}
+
+# Composite resource
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/ready: "True"
+status: {}
 ```
 
 See the [example](example) directory for examples that you can run locally using
@@ -209,7 +218,7 @@ data:
   region: {{ $spec.region }}
   id: field
   array:
-  - "1" 
+  - "1"
   - "2"
 ```
 
@@ -322,16 +331,16 @@ conditions:
 # Guide to ClaimConditions fields:
 # Type of the condition, e.g. DatabaseReady.
 # 'Healthy', 'Ready' and 'Synced' are reserved for use by Crossplane and this function will raise an error if used
-# - type:  
+# - type:
 # Status of the condition. String of "True"/"False"/"Unknown"
 #   status:
 # Machine-readable PascalCase reason, for example "ErrorProvisioning"
 #   reason:
-# Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim). 
+# Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim).
 # Defaults to Composite
-#   target: 
+#   target:
 # Optional message:
-#   message: 
+#   message:
 - type: TestCondition
   status: "False"
   reason: InstallFail
@@ -339,7 +348,7 @@ conditions:
   target: CompositeAndClaim
 - type: ConditionTrue
   status: "True"
-  reason: TrueCondition 
+  reason: TrueCondition
   message: we are true
   target: Composite
 - type: DatabaseReady
