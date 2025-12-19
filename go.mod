@@ -13,7 +13,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.34.3
 	k8s.io/apimachinery v0.34.3
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	k8s.io/utils v0.0.0-20251218160917-61b37f7a4624
 	sigs.k8s.io/controller-tools v0.19.0
 )
 
