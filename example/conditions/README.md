@@ -25,7 +25,7 @@ Next, set the go-templating function `render.crossplane.io/runtime: Development`
 `crossplane render` communicates with the local process instead of downloading an image:
 
 ```yaml
-apiVersion: pkg.crossplane.io/v1beta1
+apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: crossplane-contrib-function-go-templating
