@@ -16,8 +16,10 @@ import (
 // +kubebuilder:storageversion
 // +kubebuilder:resource:categories=crossplane
 type GoTemplate struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
 	// Template delimiters
 	// +optional
 	Delims *Delims `json:"delims,omitempty"`
@@ -33,31 +35,36 @@ type GoTemplate struct {
 	Options *[]string `json:"options,omitempty"`
 }
 
+// TemplateSource defines the location of the source template.
 type TemplateSource string
 
 const (
-	// InlineSource indicates that function will get its input as inline
+	// InlineSource indicates that function will get its input as inline.
 	InlineSource TemplateSource = "Inline"
 
-	// FileSystemSource indicates that function will get its input from a folder
+	// FileSystemSource indicates that function will get its input from a folder.
 	FileSystemSource TemplateSource = "FileSystem"
 
-	// EnvironmentSource indicates that function will get its input from the environment
+	// EnvironmentSource indicates that function will get its input from the environment.
 	EnvironmentSource TemplateSource = "Environment"
 )
 
+// TemplateSourceInline defines the structure of the inline source.
 type TemplateSourceInline struct {
 	Template string `json:"template,omitempty"`
 }
 
+// TemplateSourceFileSystem defines the structure of the filesystem source.
 type TemplateSourceFileSystem struct {
 	DirPath string `json:"dirPath,omitempty"`
 }
 
+// TemplateSourceEnvironment defines the structure of the environment source.
 type TemplateSourceEnvironment struct {
 	Key string `json:"key,omitempty"`
 }
 
+// Delims defines the structure for customizing template delimiters.
 type Delims struct {
 	// Template start characters
 	// +kubebuilder:default:="{{"

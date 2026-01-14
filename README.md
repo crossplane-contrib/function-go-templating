@@ -74,8 +74,13 @@ also supports [Sprig template functions][sprig] as well as [additional functions
 [Template options](https://pkg.go.dev/text/template#Template.Option) can be provided using the `Options`
 property.
 
-To return desired composite resource connection details, include a template that
-produces the special `CompositeConnectionDetails` resource:
+### Connection Details
+
+#### v1 Composite Resources (Legacy)
+
+For **legacy v1 XRs only**, you can return desired composite resource
+connection details by including a template that produces the special
+`CompositeConnectionDetails` resource:
 
 ```yaml
 apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
@@ -92,7 +97,33 @@ data:
   server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
 ```
 
+#### v2 Composite Resources
+
+For **v2 composite resources**, the `CompositeConnectionDetails` resource is not
+supported. Instead, you should compose an explicit Kubernetes `Secret` resource
+that aggregates connection details from the other composed resources.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    {{ setResourceNameAnnotation "connection-secret" }}
+{{ if eq $.observed.resources nil }}
+data: {}
+{{ else }}
+data:
+  server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
+{{ end }}
+```
+
+For a detailed walkthrough and full example, please see the
+[Connection Details Compositions guide] in the Crossplane docs.
+
+### Readiness
+
 To mark a desired composed resource or composite resource as ready or not ready, use the
+
 `gotemplating.fn.crossplane.io/ready` annotation:
 
 ```yaml
@@ -199,7 +230,7 @@ extra resources are passed down the pipeline.
       // ... any other requested extra resources ...
     }
   }
-  
+
 }
 ```
 If a function previously set extra resources under the key in the context,
@@ -406,3 +437,4 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
 [extra-resources]: https://docs.crossplane.io/latest/concepts/composition-functions/#how-composition-functions-work
+[Connection Details Compositions guide]: https://docs.crossplane.io/latest/guides/connection-details-composition/

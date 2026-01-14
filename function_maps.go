@@ -11,28 +11,31 @@ import (
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
-	"github.com/crossplane/function-sdk-go/errors"
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/util/json"
+
+	"github.com/crossplane/function-sdk-go/errors"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
 const recursionMaxNums = 1000
 
-var funcMaps = []template.FuncMap{
-	{
-		"randomChoice":                 randomChoice,
-		"toYaml":                       toYaml,
-		"fromYaml":                     fromYaml,
-		"getResourceCondition":         getResourceCondition,
-		"setResourceNameAnnotation":    setResourceNameAnnotation,
-		"getComposedResource":          getComposedResource,
-		"getCompositeResource":         getCompositeResource,
-		"getExtraResources":            getExtraResources,
-		"getExtraResourcesFromContext": getExtraResourcesFromContext,
-		"getCredentialData":            getCredentialData,
-	},
+func getFunctions() []template.FuncMap {
+	return []template.FuncMap{
+		{
+			"randomChoice":                 randomChoice,
+			"toYaml":                       toYaml,
+			"fromYaml":                     fromYaml,
+			"getResourceCondition":         getResourceCondition,
+			"setResourceNameAnnotation":    setResourceNameAnnotation,
+			"getComposedResource":          getComposedResource,
+			"getCompositeResource":         getCompositeResource,
+			"getExtraResources":            getExtraResources,
+			"getExtraResourcesFromContext": getExtraResourcesFromContext,
+			"getCredentialData":            getCredentialData,
+		},
+	}
 }
 
 func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
@@ -44,7 +47,7 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 		}
 	}
 
-	for _, f := range funcMaps {
+	for _, f := range getFunctions() {
 		tpl.Funcs(f)
 	}
 	tpl.Funcs(template.FuncMap{
@@ -62,7 +65,7 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 }
 
 func randomChoice(choices ...string) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // strong random number generation is not required
 
 	return choices[r.Intn(len(choices))]
 }
@@ -99,11 +102,10 @@ func setResourceNameAnnotation(name string) string {
 	return fmt.Sprintf("gotemplating.fn.crossplane.io/composition-resource-name: %s", name)
 }
 
-func initInclude(t *template.Template) func(string, interface{}) (string, error) {
-
+func initInclude(t *template.Template) func(string, any) (string, error) {
 	includedNames := make(map[string]int)
 
-	return func(name string, data interface{}) (string, error) {
+	return func(name string, data any) (string, error) {
 		var buf strings.Builder
 		if v, ok := includedNames[name]; ok {
 			if v > recursionMaxNums {
@@ -117,7 +119,6 @@ func initInclude(t *template.Template) func(string, interface{}) (string, error)
 		includedNames[name]--
 		return buf.String(), err
 	}
-
 }
 
 func getComposedResource(req map[string]any, name string) map[string]any {
