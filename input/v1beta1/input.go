@@ -49,9 +49,11 @@ const (
 	EnvironmentSource TemplateSource = "Environment"
 )
 
-// TemplateSourceInline defines the structure of the inline source.
+// TemplateSourceInline defines the structure of the inline source. Allows specifying either a single inline template or multiple templates, but not both.
+// +kubebuilder:validation:XValidation:rule="(has(self.template) ? 1 : 0) + (has(self.templates) ? 1 : 0) == 1",message="Exactly one of 'template' or 'templates' must be set"
 type TemplateSourceInline struct {
-	Template string `json:"template,omitempty"`
+	Template  string   `json:"template,omitempty"`
+	Templates []string `json:"templates,omitempty"`
 }
 
 // TemplateSourceFileSystem defines the structure of the filesystem source.
