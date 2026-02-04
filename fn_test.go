@@ -65,6 +65,7 @@ metadata:
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
 	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
+	extraResourceNamespaced = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"v1","kind":"ConfigMap","matchName":"cool-extra-resource","namespace":"default"}}}`
 
 	key       = "userkey/go-template"
 	path      = "testdata/templates"
@@ -1639,6 +1640,72 @@ func TestRunFunction(t *testing.T) {
 								Match: &fnv1.ResourceSelector_MatchName{
 									MatchName: "cool-extra-resource",
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"NamespacedExtraResource": {
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResourceNamespaced},
+						}),
+					RequiredResources: map[string]*fnv1.Resources{
+						"cool-extra-resource": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{"apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": "cool-extra-resource", "namespace": "default"}, "data": {"a": "b"}}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Context: resource.MustStructJSON(
+						`{
+							"apiextensions.crossplane.io/extra-resources": {
+								"cool-extra-resource": {
+								    "items": [
+									    {
+											"resource": {
+												"apiVersion": "v1",
+												"kind": "ConfigMap",
+												"metadata": {
+													"name": "cool-extra-resource",
+													"namespace": "default"
+												},
+												"data": {
+													"a": "b"
+												}
+											}
+										}
+									]
+								}
+							}
+						}`,
+					),
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON("{}"),
+						},
+					},
+					Requirements: &fnv1.Requirements{
+						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "v1",
+								Kind:       "ConfigMap",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+								Namespace: ptr.To("default"),
 							},
 						},
 					},

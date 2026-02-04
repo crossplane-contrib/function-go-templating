@@ -56,7 +56,7 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 	}
 
 	if e.Namespace != "" {
-		*out.Namespace = e.Namespace
+		out.Namespace = &e.Namespace
 	}
 	return out
 }
