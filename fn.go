@@ -196,7 +196,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Check for ready state.
 		var ready *resource.Ready
-		if cd.Resource.GetAPIVersion() != metaApiVersion {
+		if cd.Resource.GetAPIVersion() != metaAPIVersion {
 			if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
 				if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
 					response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
