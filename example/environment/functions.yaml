@@ -1,5 +1,5 @@
 ---
-apiVersion: pkg.crossplane.io/v1beta1
+apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: crossplane-contrib-function-environment-configs
@@ -7,7 +7,7 @@ spec:
   # This is ignored when using the Development runtime.
   package: xpkg.crossplane.io/crossplane-contrib/function-environment-configs:v0.6.0
 ---
-apiVersion: pkg.crossplane.io/v1beta1
+apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: crossplane-contrib-function-go-templating
@@ -17,7 +17,7 @@ metadata:
 spec:
   package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.11.3
 ---
-apiVersion: pkg.crossplane.io/v1beta1
+apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: crossplane-contrib-function-auto-ready
