@@ -105,7 +105,7 @@ func setResourceNameAnnotation(name string) string {
 }
 
 func initTpl(parent *template.Template, includedNames map[string]int) func(string, any) (string, error) {
-	//see https://github.com/helm/helm/blob/261233caec499c18602c61ac32507fa4656ebc9b/pkg/engine/engine.go#L148
+	// see https://github.com/helm/helm/blob/261233caec499c18602c61ac32507fa4656ebc9b/pkg/engine/engine.go#L148
 	return func(tpl string, vals interface{}) (string, error) {
 		t, err := parent.Clone()
 		t.Option("missingkey=zero")
@@ -133,7 +133,6 @@ func initTpl(parent *template.Template, includedNames map[string]int) func(strin
 }
 
 func initInclude(t *template.Template, includedNames map[string]int) func(string, interface{}) (string, error) {
-
 	return func(name string, data any) (string, error) {
 		var buf strings.Builder
 		if v, ok := includedNames[name]; ok {
