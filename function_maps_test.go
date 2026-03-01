@@ -331,9 +331,10 @@ Must capture output: {{$var}}
 		},
 	}
 
+	includedNames := make(map[string]int)
 	tpl := template.New("")
 	tpl.Funcs(template.FuncMap{
-		"include": initInclude(tpl),
+		"include": initInclude(tpl, includedNames),
 	})
 
 	for name, tc := range cases {
@@ -745,6 +746,63 @@ func Test_getCredentialData(t *testing.T) {
 			got := getCredentialData(req, "foo-creds")
 			if diff := cmp.Diff(tc.want.data, got); diff != "" {
 				t.Errorf("%s\ngetCredentialData(...): -want data, +got data:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
+func Test_tpl(t *testing.T) {
+	type args struct {
+		val string
+	}
+	type want struct {
+		rsp string
+		err error
+	}
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"ExecTemplate": {
+			reason: "Should return the executed template",
+			args: args{
+				val: `Must capture output: {{(tpl "should interpolate {{.}}" "test" )}}`,
+			},
+			want: want{
+				rsp: `Must capture output: should interpolate test`,
+			},
+		},
+		"TemplateErrorCtxNotSet": {
+			reason: "Should return error if ctx not set",
+			args: args{
+				val: `Must capture output: {{ tpl "should interpolate {{.}}" }}`,
+			},
+			want: want{
+				rsp: `Must capture output: `,
+				err: cmpopts.AnyError,
+			},
+		},
+	}
+
+	includedNames := make(map[string]int)
+	tpl := template.New("")
+	tpl.Funcs(template.FuncMap{
+		"include": initInclude(tpl, includedNames),
+		"tpl":     initTpl(tpl, includedNames),
+	})
+
+	for name, tc := range cases {
+		_tpl := template.Must(tpl.Parse(tc.args.val))
+		t.Run(name, func(t *testing.T) {
+			rsp := &bytes.Buffer{}
+			err := _tpl.Execute(rsp, nil)
+			if diff := cmp.Diff(tc.want.rsp, rsp.String(), protocmp.Transform()); diff != "" {
+				t.Errorf("%s\ntpl(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\ntpl(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
 		})
 	}
