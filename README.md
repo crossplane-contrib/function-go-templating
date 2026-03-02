@@ -48,7 +48,8 @@ spec:
 This function can load templates from three sources: `Inline`, `FileSystem` and `Environment`.
 
 Use the `Inline` source to specify a simple template inline in your Composition.
-Multiple YAML manifests can be specified using the `---` document separator.
+Multiple YAML manifests can be specified using the `templates` field, which may contain a slice of
+strings, or by using the `---` document separator in the `template` field.
 
 Use the `FileSystem` source to specify a directory of templates. The
 `FileSystem` source treats all files under the specified directory as templates.

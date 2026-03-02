@@ -58,7 +58,15 @@ spec:
             properties:
               template:
                 type: string
+              templates:
+                items:
+                  type: string
+                type: array
             type: object
+            x-kubernetes-validations:
+            - message: Exactly one of 'template' or 'templates' must be set
+              rule: '(has(self.template) ? 1 : 0) + (has(self.templates) ? 1 : 0)
+                == 1'
           kind:
             description: |-
               Kind is a string value representing the REST resource this object represents.
