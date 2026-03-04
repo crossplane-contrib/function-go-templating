@@ -313,9 +313,8 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					if v.Namespace != "" {
-						requirements.Resources[k] = v.ToResourceSelector()
-					} else {
+					requirements.Resources[k] = v.ToResourceSelector()
+					if v.Namespace == "" {
 						requirements.ExtraResources[k] = v.ToResourceSelector() //nolint:staticcheck // need to support Crossplane v1
 					}
 				}
