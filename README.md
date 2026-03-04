@@ -122,10 +122,12 @@ For a detailed walkthrough and full example, please see the
 
 ### Readiness
 
-To mark a desired composed resource as ready, use the
+To mark a desired composed resource or composite resource as ready or not ready, use the
+
 `gotemplating.fn.crossplane.io/ready` annotation:
 
 ```yaml
+# Composed resource
 apiVersion: s3.aws.upbound.io/v1beta1
 kind: Bucket
 metadata:
@@ -133,6 +135,14 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: bucket
     gotemplating.fn.crossplane.io/ready: "True"
 spec: {}
+
+# Composite resource
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/ready: "True"
+status: {}
 ```
 
 See the [example](example) directory for examples that you can run locally using
