@@ -15,4 +15,6 @@ metadata:
       familiar experience. See the
       [README](https://github.com/crossplane-contrib/function-go-templating)
       for examples and documentation.
-spec: {}
+spec:
+  capabilities:
+  - composition
