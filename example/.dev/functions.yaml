@@ -2,7 +2,7 @@
 # Use this function yaml when developing and executing the function directly instead of in a container
 # E.g. `go run . --insecure --debug --address=":9443"`
 
-apiVersion: pkg.crossplane.io/v1beta1
+apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
   name: function-go-templating
