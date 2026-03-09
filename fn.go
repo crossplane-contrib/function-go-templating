@@ -186,7 +186,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
+	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector), Resources: make(map[string]*fnv1.ResourceSelector)}
 
 	// Convert the rendered manifests to a list of desired composed resources.
 	for _, obj := range objs {
@@ -313,7 +313,10 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					requirements.ExtraResources[k] = v.ToResourceSelector() //nolint:staticcheck // need to support Crossplane v1
+					requirements.Resources[k] = v.ToResourceSelector()
+					if v.Namespace == "" {
+						requirements.ExtraResources[k] = v.ToResourceSelector() //nolint:staticcheck // need to support Crossplane v1
+					}
 				}
 			default:
 				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaAPIVersion))
@@ -353,7 +356,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if len(requirements.GetExtraResources()) > 0 { //nolint:staticcheck // need to support Crossplane v1
+	if len(requirements.GetExtraResources()) > 0 || len(requirements.GetResources()) > 0 { //nolint:staticcheck // need to support Crossplane v1
 		rsp.Requirements = requirements
 	}
 
