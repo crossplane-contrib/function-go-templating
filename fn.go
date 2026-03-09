@@ -42,8 +42,9 @@ func (*osFS) Open(name string) (fs.File, error) {
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
-	log  logging.Logger
-	fsys fs.FS
+	log           logging.Logger
+	fsys          fs.FS
+	defaultSource string
 }
 
 type YamlErrorContext struct {
@@ -70,6 +71,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	if err := request.GetInput(req, in); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
+	}
+	if in.Source == "" && f.defaultSource != "" {
+		in.Source = v1beta1.FileSystemSource
+		in.FileSystem = &v1beta1.TemplateSourceFileSystem{
+			DirPath: f.defaultSource,
+		}
 	}
 
 	tg, err := NewTemplateSourceGetter(f.fsys, req.GetContext(), in)
