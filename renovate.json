@@ -4,12 +4,18 @@
     "config:recommended"
   ],
   "crossplane": {
-    "fileMatch": ["(^|/)example/.*\\.ya?ml$"]
+    "managerFilePatterns": [
+      "/(^|/)example/.*\\.ya?ml$/"
+    ]
   },
   "packageRules": [
     {
-      "matchManagers": ["crossplane"],
-      "matchFileNames": ["example/**"],
+      "matchManagers": [
+        "crossplane"
+      ],
+      "matchFileNames": [
+        "example/**"
+      ],
       "groupName": "examples"
     }
   ],
