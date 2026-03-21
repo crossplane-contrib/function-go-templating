@@ -131,6 +131,7 @@ jobs:
   # pushes them as a multi-platform package. We only push the package it the
   # XPKG_ACCESS_ID and XPKG_TOKEN secrets were provided.
   push:
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     needs:
       - build
