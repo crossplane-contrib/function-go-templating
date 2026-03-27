@@ -42,9 +42,10 @@ func (*osFS) Open(name string) (fs.File, error) {
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
-	log           logging.Logger
-	fsys          fs.FS
-	defaultSource string
+	log            logging.Logger
+	fsys           fs.FS
+	defaultSource  string
+	defaultOptions string
 }
 
 type YamlErrorContext struct {
@@ -93,9 +94,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if in.Options != nil {
-		f.log.Debug("setting template options", "options", *in.Options)
-		err = safeApplyTemplateOptions(tmpl, *in.Options)
+	if in.Options != nil || f.defaultOptions != "" {
+		var o []string
+		if in.Options != nil {
+			o = *in.Options
+		} else {
+			o = strings.Split(f.defaultOptions, ",")
+		}
+		f.log.Debug("setting template options", "options", o)
+		err = safeApplyTemplateOptions(tmpl, o)
 		if err != nil {
 			response.Fatal(rsp, errors.Wrap(err, "cannot apply template options"))
 			return rsp, nil

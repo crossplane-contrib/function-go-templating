@@ -73,7 +73,10 @@ contain periods, hyphens and other special characters. Like Helm, this function
 also supports [Sprig template functions][sprig] as well as [additional functions](#additional-functions).
 
 [Template options](https://pkg.go.dev/text/template#Template.Option) can be provided using the `Options`
-property.
+property.  The default options are "missingkey=default".  This can be
+overridden by the `--default-options` CLI flag or the `FUNCTION_GO_TEMPLATING_DEFAULT_OPTIONS`
+environment variable.  Setting the default-options to "missingkey=error" will cause the template
+engine to return an error when a missing key is detected, instead of setting the value to "<no value>".
 
 ### Connection Details
 

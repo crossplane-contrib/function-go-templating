@@ -17,6 +17,7 @@ type CLI struct {
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
 	MaxRecvMessageSize int    `default:"4"                                                                                          help:"Maximum size of received messages in MB."`
 	DefaultSource      string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"                                                                        help:"Default template source to use when input is not provided to the function."`
+	DefaultOptions     string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_OPTIONS"                                                                       help:"Comma-separated default template options to use when input is not provided to the function."`
 }
 
 // Run this Function.
@@ -28,9 +29,10 @@ func (c *CLI) Run() error {
 
 	return function.Serve(
 		&Function{
-			log:           log,
-			fsys:          &osFS{},
-			defaultSource: c.DefaultSource,
+			log:            log,
+			fsys:           &osFS{},
+			defaultSource:  c.DefaultSource,
+			defaultOptions: c.DefaultOptions,
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),

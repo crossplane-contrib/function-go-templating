@@ -30,7 +30,7 @@ metadata:
 
 	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
 	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
-	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
+	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
@@ -77,9 +77,10 @@ metadata:
 
 func TestRunFunction(t *testing.T) {
 	type args struct {
-		ctx           context.Context
-		req           *fnv1.RunFunctionRequest
-		defaultSource string
+		ctx            context.Context
+		req            *fnv1.RunFunctionRequest
+		defaultSource  string
+		defaultOptions string
 	}
 	type want struct {
 		rsp *fnv1.RunFunctionResponse
@@ -1243,7 +1244,7 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"InvalidTemplateOption": {
-			reason: "The Function should return error when an invalid option is provided.",
+			reason: "The Function should return error when an invalid option is provided as input.",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
@@ -1258,6 +1259,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 				},
+				defaultOptions: "missingkey=default",
 			},
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
@@ -1266,6 +1268,66 @@ func TestRunFunction(t *testing.T) {
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "cannot apply template options: panic occurred while applying template options: unrecognized option: missingoption=nothing",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"InvalidDefaultTemplateOption": {
+			reason: "The Function should return error when an invalid option is provided.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+				defaultOptions: "missingoption=nothing",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot apply template options: panic occurred while applying template options: unrecognized option: missingoption=nothing",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"DefaultTemplateOptionError": {
+			reason: "The Function should return error when a missing key is detected.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+				defaultOptions: "missingkey=error",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1537,7 +1599,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
+							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1830,9 +1892,10 @@ func TestRunFunction(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			f := &Function{
-				log:           logging.NewNopLogger(),
-				fsys:          testdataFS,
-				defaultSource: tc.args.defaultSource,
+				log:            logging.NewNopLogger(),
+				fsys:           testdataFS,
+				defaultSource:  tc.args.defaultSource,
+				defaultOptions: tc.args.defaultOptions,
 			}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 
