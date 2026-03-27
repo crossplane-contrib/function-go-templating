@@ -1327,7 +1327,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
+							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
