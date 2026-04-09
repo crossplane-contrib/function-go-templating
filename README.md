@@ -404,6 +404,7 @@ The following custom template functions are available in addition to Go's built-
 | [`fromYaml`](example/functions/fromYaml)                              | Unmarshals a YAML string into an object.                                    |
 | [`getResourceCondition`](example/functions/getResourceCondition)      | Retrieves conditions of resources.                                          |
 | [`getComposedResource`](example/functions/getComposedResource)        | Retrieves observed composed resources.                                      |
+| [`getComposedConnectionDetails`](example/functions/getComposedConnectionDetails) | Retrieves connection details of an observed composed resource.       |
 | [`getCompositeResource`](example/functions/getCompositeResource)      | Retrieves the observed composite resource.                                  |
 | [`getExtraResources`](example/functions/getExtraResources)            | Retrieves extra resources.                                                  |
 | [`getExtraResourcesFromContext`](example/functions/getExtraResourcesFromContext) | Retrieves extra resources from the environment context.                     |

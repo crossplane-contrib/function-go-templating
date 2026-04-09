@@ -1,0 +1,49 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: example-function-get-composed-connection-details
+spec:
+  compositeTypeRef:
+    apiVersion: example.crossplane.io/v1beta1
+    kind: XR
+  mode: Pipeline
+  pipeline:
+    - step: render-templates
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            ---
+            {{ $flexServerResourceName := "flexServer" }}
+            # Create an initial composed resource whose connection details we will retrieve
+            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+            kind: FlexibleServer
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation $flexServerResourceName }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec:
+              forProvider:
+                storageMb: 32768
+              providerConfigRef:
+                name: my-provider-cfg
+            ---
+            # Use getComposedConnectionDetails to retrieve the connection details of "flexServer"
+            {{ $flexServerCD := getComposedConnectionDetails . $flexServerResourceName }}
+
+            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
+            kind: FlexibleServerConfiguration
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "flexServerConfig" }}
+                gotemplating.fn.crossplane.io/ready: "False"
+            spec:
+              forProvider:
+                # Populate the field using the connection details of the retrieved resource
+                serverHost: {{ index $flexServerCD "host" }}
+              providerConfigRef:
+                name: my-provider-cfg
