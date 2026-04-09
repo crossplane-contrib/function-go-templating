@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: example-function-get-composed-connection-details
+  name: useraccesskeys-go-templating
 spec:
   compositeTypeRef:
     apiVersion: example.crossplane.io/v1beta1
@@ -18,32 +18,52 @@ spec:
         inline:
           template: |
             ---
-            {{ $flexServerResourceName := "flexServer" }}
-            # Create an initial composed resource whose connection details we will retrieve
-            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
-            kind: FlexibleServer
+            apiVersion: iam.aws.m.upbound.io/v1beta1
+            kind: User
             metadata:
               annotations:
-                {{ setResourceNameAnnotation $flexServerResourceName }}
-                gotemplating.fn.crossplane.io/ready: "False"
+                {{ setResourceNameAnnotation "user" }}
             spec:
-              forProvider:
-                storageMb: 32768
-              providerConfigRef:
-                name: my-provider-cfg
+              forProvider: {}
             ---
-            # Use getComposedConnectionDetails to retrieve the connection details of "flexServer"
-            {{ $flexServerCD := getComposedConnectionDetails . $flexServerResourceName }}
-
-            apiVersion: dbforpostgresql.azure.upbound.io/v1beta1
-            kind: FlexibleServerConfiguration
+            apiVersion: iam.aws.m.upbound.io/v1beta1
+            kind: AccessKey
             metadata:
               annotations:
-                {{ setResourceNameAnnotation "flexServerConfig" }}
-                gotemplating.fn.crossplane.io/ready: "False"
+                {{ setResourceNameAnnotation "accesskey-0" }}
             spec:
               forProvider:
-                # Populate the field using the connection details of the retrieved resource
-                serverHost: {{ index $flexServerCD "host" }}
-              providerConfigRef:
-                name: my-provider-cfg
+                userSelector:
+                  matchControllerRef: true
+              writeConnectionSecretToRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-accesskey-secret-0
+            ---
+            apiVersion: iam.aws.m.upbound.io/v1beta1
+            kind: AccessKey
+            metadata:
+              annotations:
+                {{ setResourceNameAnnotation "accesskey-1" }}
+            spec:
+              forProvider:
+                userSelector:
+                  matchControllerRef: true
+              writeConnectionSecretToRef:
+                name: {{ $.observed.composite.resource.metadata.name }}-accesskey-secret-1
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ dig "spec" "writeConnectionSecretToRef" "name" "" $.observed.composite.resource }}
+              annotations:
+                {{ setResourceNameAnnotation "connection-secret" }}
+            {{ if eq $.observed.resources nil }}
+            data: {}
+            {{ else }}
+            {{ $accesskey0 := getComposedConnectionDetails . "accesskey-0" }}
+            {{ $accesskey1 := getComposedConnectionDetails . "accesskey-1" }}
+            data:
+              user-0: {{ index $accesskey0 "username" }}
+              user-1: {{ index $accesskey1 "username" }}
+              password-0: {{ index $accesskey0 "password" }}
+              password-1: {{ index $accesskey1 "password" }}
+            {{ end }}

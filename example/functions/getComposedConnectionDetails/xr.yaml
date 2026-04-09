@@ -2,4 +2,7 @@ apiVersion: example.crossplane.io/v1beta1
 kind: XR
 metadata:
   name: example
-spec: {}
+  namespace: default
+spec:
+  writeConnectionSecretToRef:
+    name: example-connection-secret
