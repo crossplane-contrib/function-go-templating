@@ -499,6 +499,96 @@ func Test_getCompositeResource(t *testing.T) {
 	}
 }
 
+func Test_getComposedConnectionDetails(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp map[string]any
+	}
+
+	connectionDetails := map[string]any{
+		"username": "dXNlcg==",
+		"password": "cGFzcw==",
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveConnectionDetails": {
+			reason: "Should successfully retrieve connection details for a composed resource",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my-resource": map[string]any{
+								"connectionDetails": connectionDetails,
+							},
+						},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: connectionDetails},
+		},
+		"RetrieveConnectionDetailsWithDots": {
+			reason: "Should successfully retrieve connection details when identifier contains dots",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my.resource": map[string]any{
+								"connectionDetails": connectionDetails,
+							},
+						},
+					},
+				},
+				name: "my.resource",
+			},
+			want: want{rsp: connectionDetails},
+		},
+		"MissingConnectionDetails": {
+			reason: "Should return nil if the resource has no connectionDetails",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my-resource": map[string]any{},
+						},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: nil},
+		},
+		"ResourceNotFound": {
+			reason: "Should return nil if the resource is not found",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getComposedConnectionDetails(tc.args.req, tc.args.name)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetComposedConnectionDetails(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
 func Test_getExtraResources(t *testing.T) {
 	type args struct {
 		req  map[string]any

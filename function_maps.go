@@ -31,6 +31,7 @@ func getFunctions() []template.FuncMap {
 			"setResourceNameAnnotation":    setResourceNameAnnotation,
 			"getComposedResource":          getComposedResource,
 			"getCompositeResource":         getCompositeResource,
+			"getComposedConnectionDetails": getComposedConnectionDetails,
 			"getExtraResources":            getExtraResources,
 			"getExtraResourcesFromContext": getExtraResourcesFromContext,
 			"getCredentialData":            getCredentialData,
@@ -138,6 +139,16 @@ func getCompositeResource(req map[string]any) map[string]any {
 	}
 
 	return cr
+}
+
+func getComposedConnectionDetails(req map[string]any, name string) map[string]any {
+	var cd map[string]any
+	path := fmt.Sprintf("observed.resources[%s]connectionDetails", name)
+	if err := fieldpath.Pave(req).GetValueInto(path, &cd); err != nil {
+		return nil
+	}
+
+	return cd
 }
 
 func getExtraResources(req map[string]any, name string) []any {
