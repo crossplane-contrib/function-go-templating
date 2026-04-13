@@ -2,12 +2,13 @@ package main
 
 import (
 	"dario.cat/mergo"
+
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
-// MergeContext merges existing Context with new values provided
-func (f *Function) MergeContext(req *fnv1.RunFunctionRequest, val map[string]interface{}) (map[string]interface{}, error) {
+// MergeContext merges existing Context with new values provided.
+func (f *Function) MergeContext(req *fnv1.RunFunctionRequest, val map[string]any) (map[string]any, error) {
 	mergedContext := req.GetContext().AsMap()
 	if len(val) == 0 {
 		return mergedContext, nil

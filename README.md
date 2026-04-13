@@ -48,7 +48,8 @@ spec:
 This function can load templates from three sources: `Inline`, `FileSystem` and `Environment`.
 
 Use the `Inline` source to specify a simple template inline in your Composition.
-Multiple YAML manifests can be specified using the `---` document separator.
+Multiple YAML manifests can be specified using the `templates` field, which may contain a slice of
+strings, or by using the `---` document separator in the `template` field.
 
 Use the `FileSystem` source to specify a directory of templates. The
 `FileSystem` source treats all files under the specified directory as templates.
@@ -72,10 +73,18 @@ contain periods, hyphens and other special characters. Like Helm, this function
 also supports [Sprig template functions][sprig] as well as [additional functions](#additional-functions).
 
 [Template options](https://pkg.go.dev/text/template#Template.Option) can be provided using the `Options`
-property.
+property.  The default options are "missingkey=default".  This can be
+overridden by the `--default-options` CLI flag or the `FUNCTION_GO_TEMPLATING_DEFAULT_OPTIONS`
+environment variable.  Setting the default-options to "missingkey=error" will cause the template
+engine to return an error when a missing key is detected, instead of setting the value to "<no value>".
 
-To return desired composite resource connection details, include a template that
-produces the special `CompositeConnectionDetails` resource:
+### Connection Details
+
+#### v1 Composite Resources (Legacy)
+
+For **legacy v1 XRs only**, you can return desired composite resource
+connection details by including a template that produces the special
+`CompositeConnectionDetails` resource:
 
 ```yaml
 apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
@@ -92,10 +101,37 @@ data:
   server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
 ```
 
-To mark a desired composed resource as ready, use the
+#### v2 Composite Resources
+
+For **v2 composite resources**, the `CompositeConnectionDetails` resource is not
+supported. Instead, you should compose an explicit Kubernetes `Secret` resource
+that aggregates connection details from the other composed resources.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    {{ setResourceNameAnnotation "connection-secret" }}
+{{ if eq $.observed.resources nil }}
+data: {}
+{{ else }}
+data:
+  server-endpoint: {{ (index $.observed.resources "my-server").resource.status.atProvider.endpoint | b64enc }}
+{{ end }}
+```
+
+For a detailed walkthrough and full example, please see the
+[Connection Details Compositions guide] in the Crossplane docs.
+
+### Readiness
+
+To mark a desired composed resource or composite resource as ready or not ready, use the
+
 `gotemplating.fn.crossplane.io/ready` annotation:
 
 ```yaml
+# Composed resource
 apiVersion: s3.aws.upbound.io/v1beta1
 kind: Bucket
 metadata:
@@ -103,6 +139,14 @@ metadata:
     gotemplating.fn.crossplane.io/composition-resource-name: bucket
     gotemplating.fn.crossplane.io/ready: "True"
 spec: {}
+
+# Composite resource
+apiVersion: example.crossplane.io/v1beta1
+kind: XR
+metadata:
+  annotations:
+    gotemplating.fn.crossplane.io/ready: "True"
+status: {}
 ```
 
 See the [example](example) directory for examples that you can run locally using
@@ -190,7 +234,7 @@ extra resources are passed down the pipeline.
       // ... any other requested extra resources ...
     }
   }
-  
+
 }
 ```
 If a function previously set extra resources under the key in the context,
@@ -209,7 +253,7 @@ data:
   region: {{ $spec.region }}
   id: field
   array:
-  - "1" 
+  - "1"
   - "2"
 ```
 
@@ -322,16 +366,16 @@ conditions:
 # Guide to ClaimConditions fields:
 # Type of the condition, e.g. DatabaseReady.
 # 'Healthy', 'Ready' and 'Synced' are reserved for use by Crossplane and this function will raise an error if used
-# - type:  
+# - type:
 # Status of the condition. String of "True"/"False"/"Unknown"
 #   status:
 # Machine-readable PascalCase reason, for example "ErrorProvisioning"
 #   reason:
-# Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim). 
+# Optional Target. Publish Condition only to the Composite, or the Composite and the Claim (CompositeAndClaim).
 # Defaults to Composite
-#   target: 
+#   target:
 # Optional message:
-#   message: 
+#   message:
 - type: TestCondition
   status: "False"
   reason: InstallFail
@@ -339,7 +383,7 @@ conditions:
   target: CompositeAndClaim
 - type: ConditionTrue
   status: "True"
-  reason: TrueCondition 
+  reason: TrueCondition
   message: we are true
   target: Composite
 - type: DatabaseReady
@@ -360,6 +404,7 @@ The following custom template functions are available in addition to Go's built-
 | [`fromYaml`](example/functions/fromYaml)                              | Unmarshals a YAML string into an object.                                    |
 | [`getResourceCondition`](example/functions/getResourceCondition)      | Retrieves conditions of resources.                                          |
 | [`getComposedResource`](example/functions/getComposedResource)        | Retrieves observed composed resources.                                      |
+| [`getComposedConnectionDetails`](example/functions/getComposedConnectionDetails) | Retrieves connection details of an observed composed resource.       |
 | [`getCompositeResource`](example/functions/getCompositeResource)      | Retrieves the observed composite resource.                                  |
 | [`getExtraResources`](example/functions/getExtraResources)            | Retrieves extra resources.                                                  |
 | [`getExtraResourcesFromContext`](example/functions/getExtraResourcesFromContext) | Retrieves extra resources from the environment context.                     |
@@ -397,3 +442,4 @@ $ crossplane xpkg build -f package --embed-runtime-image=runtime
 [docker]: https://www.docker.com
 [cli]: https://docs.crossplane.io/latest/cli
 [extra-resources]: https://docs.crossplane.io/latest/concepts/composition-functions/#how-composition-functions-work
+[Connection Details Compositions guide]: https://docs.crossplane.io/latest/guides/connection-details-composition/

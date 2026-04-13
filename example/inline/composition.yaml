@@ -26,7 +26,7 @@ spec:
                 {{ setResourceNameAnnotation (print "test-user-" $i) }}
               labels:
                 testing.upbound.io/example-name: test-user-{{ $i }}
-                dummy: {{ dig "resources" (print "test-user-" $i) "resource" "metadata" "labels" "dummy" ( randomChoice "foo" "bar" "baz" ) $.observed }}            
+                dummy: {{ dig "resources" (print "test-user-" $i) "resource" "metadata" "labels" "dummy" ( randomChoice "foo" "bar" "baz" ) $.observed }}
             spec:
               forProvider: {}
             ---
@@ -45,8 +45,12 @@ spec:
                 namespace: crossplane-system
             {{- end }}
             ---
-            apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
-            kind: CompositeConnectionDetails
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{ dig "spec" "writeConnectionSecretToRef" "name" "" $.observed.composite.resource }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: connection-secret
             {{ if eq $.observed.resources nil }}
             data: {}
             {{ else }}

@@ -26,8 +26,12 @@ spec:
     namespace: crossplane-system
 {{- end }}
 ---
-apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
-kind: CompositeConnectionDetails
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ dig "spec" "writeConnectionSecretToRef" "name" "" $.observed.composite.resource }}
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: connection-secret
 {{ if eq $.observed.resources nil }}
 data: {}
 {{ else }}

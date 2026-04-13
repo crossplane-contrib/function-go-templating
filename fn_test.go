@@ -7,19 +7,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 var (
@@ -33,7 +31,7 @@ metadata:
 
 	cd                    = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd"}}`
 	cdTmpl                = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}}}`
-	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
+	cdMissingKeyTmpl      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd"},"name":"cool-cd","labels":{"belongsTo":{{.missing | quote }}}}}`
 	cdWrongTmpl           = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd","labels":{"belongsTo":{{.invalid-key}}}}}`
 	cdMissingKind         = `{"apiVersion":"example.org/v1"}`
 	cdMissingResourceName = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"name":"cool-cd"}}`
@@ -46,12 +44,19 @@ metadata:
 	metaResourceContextInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data": 1 }`
 	metaResourceContext        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"apiextensions.crossplane.io/environment":{ "new":"value"}}}`
 
-	xr                    = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
-	xrWithStatus          = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"ready":"true"}}`
-	xrWithNestedStatusFoo = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"}}}`
-	xrWithNestedStatusBaz = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
-	xrRecursiveTmpl       = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"recursive-xr"},"name":"recursive-xr","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}},"spec":{"count":2}}`
-	xrWithTtl             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ttl": "5m"},"name":"cool-xr"},"spec":{"count":2}}`
+	xr                             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithStatus                   = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"ready":"true"}}`
+	xrWithNestedStatusFoo          = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"}}}`
+	xrWithNestedStatusBaz          = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"baz":"qux"}}}`
+	xrRecursiveTmpl                = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"recursive-xr"},"name":"recursive-xr","labels":{"belongsTo":{{.observed.composite.resource.metadata.name|quote}}}},"spec":{"count":2}}`
+	xrWithReadyTrue                = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyFalse               = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"False"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyUnspecified         = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"Unspecified"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyWrong               = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyTrueAndResourceName = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"xr-as-composed","gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyTrueAndStatus       = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2},"status":{"phase":"Ready","message":"Composite resource is ready"}}`
+	xrWithStatusUpdate             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"False"},"name":"cool-xr"},"spec":{"count":2},"status":{"phase":"Updating","newField":"added"}}`
+	xrWithTTL                      = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ttl": "5m"},"name":"cool-xr"},"spec":{"count":2}}`
 
 	claimConditions            = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"TestCondition","status":"False","reason":"InstallFail","message":"failed to install","target":"ClaimAndComposite"},{"type":"ConditionTrue","status":"True","reason":"this condition is true","message":"we are true","target":"Composite"},{"type":"DatabaseReady","status":"True","reason":"Ready","message":"Database is ready"}]}`
 	claimConditionsReservedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ClaimConditions","conditions":[{"type":"Ready","status":"False","reason":"InstallFail","message":"I am using a reserved Condition","target":"ClaimAndComposite"}]}`
@@ -62,6 +67,7 @@ metadata:
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"all-cool-resources":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchLabels":{}}}}`
 	extraResourcesDuplicatedKey = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"cool-extra-resource"}}}
 {"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"example.org/v1","kind":"CoolExtraResource","matchName":"another-cool-extra-resource"}}}`
+	extraResourceNamespaced = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"ExtraResources","requirements":{"cool-extra-resource":{"apiVersion":"v1","kind":"ConfigMap","matchName":"cool-extra-resource","namespace":"default"}}}`
 
 	key       = "userkey/go-template"
 	path      = "testdata/templates"
@@ -73,8 +79,10 @@ metadata:
 
 func TestRunFunction(t *testing.T) {
 	type args struct {
-		ctx context.Context
-		req *fnv1.RunFunctionRequest
+		ctx            context.Context
+		req            *fnv1.RunFunctionRequest
+		defaultSource  string
+		defaultOptions string
 	}
 	type want struct {
 		rsp *fnv1.RunFunctionResponse
@@ -143,7 +151,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "invalid function input: inline.template should be provided",
+							Message:  "invalid function input: inline.template or inline.templates should be provided",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -188,6 +196,28 @@ func TestRunFunction(t *testing.T) {
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "invalid function input: environment.key should be provided",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"DefaultSourceDoesNotExist": {
+			// We can't easily inject a filesystem with valid input into the
+			// test, so just make sure the default source is used and assume it
+			// would work properly if it pointed to something valid.
+			reason: "The default source should be used if specified when the input is empty",
+			args: args{
+				req:           &fnv1.RunFunctionRequest{},
+				defaultSource: "does/not/exist",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: cannot read tmpl from the folder {does/not/exist}: open does/not/exist: file does not exist",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -334,6 +364,44 @@ func TestRunFunction(t *testing.T) {
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: cdTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"cool-cd": {
+								Resource: resource.MustStructJSON(`{"apiVersion": "example.org/v1","kind":"CD","metadata":{"annotations":{},"name":"cool-cd","labels":{"belongsTo":"cool-xr"}}}`),
+							},
+						},
+					},
+				},
+			},
+		},
+		"ResponseIsReturnedWithTemplatingUsingTheTemplatesField": {
+			reason: "The Function should return the desired composite resource and the templated composed resources.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Meta: &fnv1.RequestMeta{Tag: "templates"},
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Templates: []string{cdTmpl}},
 						}),
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
@@ -765,7 +833,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaApiVersion + "\" - must be one of CompositeConnectionDetails, Context or ExtraResources",
+							Message:  "invalid kind \"InvalidMeta\" for apiVersion \"" + metaAPIVersion + "\" - must be one of CompositeConnectionDetails, Context or ExtraResources",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1080,6 +1148,40 @@ func TestRunFunction(t *testing.T) {
 								},
 							},
 						},
+						Resources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
+							"another-cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
+										Labels: map[string]string{"key": "value"},
+									},
+								},
+							},
+							"yet-another-cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "foo",
+								},
+							},
+							"all-cool-resources": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchLabels{
+									MatchLabels: &fnv1.MatchLabels{
+										Labels: map[string]string{},
+									},
+								},
+							},
+						},
 					},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
@@ -1144,7 +1246,7 @@ func TestRunFunction(t *testing.T) {
 			},
 		},
 		"InvalidTemplateOption": {
-			reason: "The Function should return error when an invalid option is provided.",
+			reason: "The Function should return error when an invalid option is provided as input.",
 			args: args{
 				req: &fnv1.RunFunctionRequest{
 					Input: resource.MustStructObject(
@@ -1159,6 +1261,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 				},
+				defaultOptions: "missingkey=default",
 			},
 			want: want{
 				rsp: &fnv1.RunFunctionResponse{
@@ -1168,6 +1271,308 @@ func TestRunFunction(t *testing.T) {
 							Severity: fnv1.Severity_SEVERITY_FATAL,
 							Message:  "cannot apply template options: panic occurred while applying template options: unrecognized option: missingoption=nothing",
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"InvalidDefaultTemplateOption": {
+			reason: "The Function should return error when an invalid option is provided.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+				defaultOptions: "missingoption=nothing",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot apply template options: panic occurred while applying template options: unrecognized option: missingoption=nothing",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"DefaultTemplateOptionError": {
+			reason: "The Function should return error when a missing key is detected.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: cdMissingKeyTmpl},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+				defaultOptions: "missingkey=error",
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyTrue": {
+			reason: "The Function should return desired composite resource with True ready state.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyTrue},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+							Ready:    1,
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyFalse": {
+			reason: "The Function should return desired composite resource with False ready state.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyFalse},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+							Ready:    2,
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyUnspecified": {
+			reason: "The Function should return desired composite resource with Unspecified ready state.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyUnspecified},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+							Ready:    0,
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyInvalid": {
+			reason: "The Function should return a fatal result if the composite resource ready annotation is not valid.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyWrong},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "invalid function input: invalid \"" + annotationKeyReady + "\" annotation value \"wrongValue\": must be True, False, or Unspecified",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceWithResourceNameTreatedAsComposed": {
+			reason: "The Function should treat composite resource with resource name annotation as a composed resource.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyTrueAndResourceName},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+						Resources: map[string]*fnv1.Resource{
+							"xr-as-composed": {
+								Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{},"name":"cool-xr"},"spec":{"count":2}}`),
+								Ready:    1,
+							},
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyTrueWithStatus": {
+			reason: "The Function should return desired composite resource with True ready state and updated status.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyTrueAndStatus},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"phase":"Ready","message":"Composite resource is ready"}}`),
+							Ready:    1,
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceStatusMerging": {
+			reason: "The Function should merge status from template with existing status in desired composite resource.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithStatusUpdate},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xrWithNestedStatusFoo),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(`{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"state":{"foo":"bar"},"phase":"Updating","newField":"added"}}`),
+							Ready:    2,
 						},
 					},
 				},
@@ -1196,7 +1601,7 @@ func TestRunFunction(t *testing.T) {
 					Results: []*fnv1.Result{
 						{
 							Severity: fnv1.Severity_SEVERITY_FATAL,
-							Message:  "cannot execute template: template: manifests:1:96: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"",
+							Message:  "cannot execute template: template: manifests:1:180: executing \"manifests\" at <.missing>: map has no entry for key \"missing\"", //nolint:dupword // ignore test output strings
 							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1251,7 +1656,7 @@ func TestRunFunction(t *testing.T) {
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: extraResource},
 						}),
-					ExtraResources: map[string]*fnv1.Resources{
+					RequiredResources: map[string]*fnv1.Resources{
 						"cool-extra-resource": {
 							Items: []*fnv1.Resource{
 								{
@@ -1293,6 +1698,15 @@ func TestRunFunction(t *testing.T) {
 					},
 					Requirements: &fnv1.Requirements{
 						ExtraResources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
+						},
+						Resources: map[string]*fnv1.ResourceSelector{
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
@@ -1396,6 +1810,81 @@ func TestRunFunction(t *testing.T) {
 								},
 							},
 						},
+						Resources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "example.org/v1",
+								Kind:       "CoolExtraResource",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"NamespacedExtraResource": {
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: extraResourceNamespaced},
+						}),
+					RequiredResources: map[string]*fnv1.Resources{
+						"cool-extra-resource": {
+							Items: []*fnv1.Resource{
+								{
+									Resource: resource.MustStructJSON(`{"apiVersion": "v1", "kind": "ConfigMap", "metadata": {"name": "cool-extra-resource", "namespace": "default"}, "data": {"a": "b"}}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Results: []*fnv1.Result{},
+					Context: resource.MustStructJSON(
+						`{
+							"apiextensions.crossplane.io/extra-resources": {
+								"cool-extra-resource": {
+								    "items": [
+									    {
+											"resource": {
+												"apiVersion": "v1",
+												"kind": "ConfigMap",
+												"metadata": {
+													"name": "cool-extra-resource",
+													"namespace": "default"
+												},
+												"data": {
+													"a": "b"
+												}
+											}
+										}
+									]
+								}
+							}
+						}`,
+					),
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON("{}"),
+						},
+					},
+					Requirements: &fnv1.Requirements{
+						Resources: map[string]*fnv1.ResourceSelector{
+							"cool-extra-resource": {
+								ApiVersion: "v1",
+								Kind:       "ConfigMap",
+								Match: &fnv1.ResourceSelector_MatchName{
+									MatchName: "cool-extra-resource",
+								},
+								Namespace: ptr.To("default"),
+							},
+						},
 					},
 				},
 			},
@@ -1452,12 +1941,12 @@ func TestRunFunction(t *testing.T) {
 						}),
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrWithTtl),
+							Resource: resource.MustStructJSON(xrWithTTL),
 						},
 					},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrWithTtl),
+							Resource: resource.MustStructJSON(xrWithTTL),
 						},
 					},
 				},
@@ -1467,7 +1956,7 @@ func TestRunFunction(t *testing.T) {
 					Meta: &fnv1.ResponseMeta{Tag: "templates", Ttl: durationpb.New(5 * time.Minute)},
 					Desired: &fnv1.State{
 						Composite: &fnv1.Resource{
-							Resource: resource.MustStructJSON(xrWithTtl),
+							Resource: resource.MustStructJSON(xrWithTTL),
 						},
 						Resources: map[string]*fnv1.Resource{
 							"cool-cd": {
@@ -1483,9 +1972,11 @@ func TestRunFunction(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			f := &Function{
-				log:  logging.NewNopLogger(),
-				fsys: testdataFS,
-				ttl:  response.DefaultTTL,
+				log:            logging.NewNopLogger(),
+				fsys:           testdataFS,
+				ttl:            response.DefaultTTL,
+				defaultSource:  tc.args.defaultSource,
+				defaultOptions: tc.args.defaultOptions,
 			}
 			rsp, err := f.RunFunction(tc.args.ctx, tc.args.req)
 

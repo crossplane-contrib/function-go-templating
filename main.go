@@ -12,14 +12,16 @@ import (
 
 // CLI of this Function.
 type CLI struct {
-	Debug bool `short:"d" help:"Emit debug logs in addition to info logs."`
+	Debug bool `help:"Emit debug logs in addition to info logs." short:"d"`
 
-	Network            string `help:"Network on which to listen for gRPC connections." default:"tcp"`
-	Address            string `help:"Address at which to listen for gRPC connections." default:":9443"`
-	TLSCertsDir        string `help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)" env:"TLS_SERVER_CERTS_DIR"`
+	Network            string `default:"tcp"                                                                                        help:"Network on which to listen for gRPC connections."`
+	Address            string `default:":9443"                                                                                      help:"Address at which to listen for gRPC connections."`
+	TLSCertsDir        string `env:"TLS_SERVER_CERTS_DIR"                                                                           help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)"`
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
-	MaxRecvMessageSize int    `help:"Maximum size of received messages in MB." default:"4"`
-	TTL                string `help:"TTL" default:"${defaultTTL}"`
+	TTL                string `default:"${defaultTTL}"                                                                              help:"Function global setting for response TTL."`
+	MaxRecvMessageSize int    `default:"4"                                                                                          help:"Maximum size of received messages in MB."`
+	DefaultSource      string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"                                                                        help:"Default template source to use when input is not provided to the function."`
+	DefaultOptions     string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_OPTIONS"                                                                       help:"Comma-separated default template options to use when input is not provided to the function."`
 }
 
 // Run this Function.
@@ -36,9 +38,11 @@ func (c *CLI) Run() error {
 
 	return function.Serve(
 		&Function{
-			log:  log,
-			fsys: &osFS{},
-			ttl:  ttl,
+			log:            log,
+			fsys:           &osFS{},
+			defaultSource:  c.DefaultSource,
+			defaultOptions: c.DefaultOptions,
+			ttl:            ttl,
 		},
 		function.Listen(c.Network, c.Address),
 		function.MTLSCertificates(c.TLSCertsDir),

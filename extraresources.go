@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"maps"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
+
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/response"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ExtraResourcesRequirements defines the requirements for extra resources.
@@ -29,6 +30,8 @@ type ExtraResourcesRequirement struct {
 	// MatchName defines the name to match the resource, if MatchLabels is
 	// empty.
 	MatchName string `json:"matchName,omitempty"`
+	// Namespace defines the namespace of the resource to match, leave empty for cluster-scoped.
+	Namespace string `json:"namespace,omitempty"`
 }
 
 const (
@@ -51,18 +54,43 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 	out.Match = &fnv1.ResourceSelector_MatchName{
 		MatchName: e.MatchName,
 	}
+
+	if e.Namespace != "" {
+		out.Namespace = &e.Namespace
+	}
 	return out
 }
 
 func mergeExtraResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
-	b, err := json.Marshal(req.ExtraResources)
+	b, err := json.Marshal(req.GetExtraResources()) //nolint:staticcheck // retain support for v1 interface
 	if err != nil {
-		return errors.Errorf("cannot marshal %T: %w", req.ExtraResources, err)
+		return errors.Errorf("cannot marshal %T: %w", req.GetExtraResources(), err) //nolint:staticcheck // retain support for v1 interface
 	}
 
 	s := &structpb.Struct{}
 	if err := protojson.Unmarshal(b, s); err != nil {
-		return errors.Errorf("cannot unmarshal %T into %T: %w", req.ExtraResources, s, err)
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.GetExtraResources(), s, err) //nolint:staticcheck // retain support for v1 interface
+	}
+
+	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)
+	if exists {
+		merged := mergeStructs(extraResourcesFromContext.GetStructValue(), s)
+		s = merged
+	}
+
+	response.SetContextKey(rsp, extraResourcesContextKey, structpb.NewStructValue(s))
+	return nil
+}
+
+func mergeRequiredResourcesToContext(req *fnv1.RunFunctionRequest, rsp *fnv1.RunFunctionResponse) error {
+	b, err := json.Marshal(req.GetRequiredResources())
+	if err != nil {
+		return errors.Errorf("cannot marshal %T: %w", req.GetRequiredResources(), err)
+	}
+
+	s := &structpb.Struct{}
+	if err := protojson.Unmarshal(b, s); err != nil {
+		return errors.Errorf("cannot unmarshal %T into %T: %w", req.GetRequiredResources(), s, err)
 	}
 
 	extraResourcesFromContext, exists := request.GetContextKey(req, extraResourcesContextKey)

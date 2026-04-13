@@ -5,11 +5,11 @@ import (
 	"testing"
 	"text/template"
 
+	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
@@ -37,10 +37,10 @@ complexDictionary:
   - def`,
 			},
 			want: want{
-				rsp: map[string]interface{}{
-					"complexDictionary": map[string]interface{}{
+				rsp: map[string]any{
+					"complexDictionary": map[string]any{
 						"scalar1": true,
-						"list": []interface{}{
+						"list": []any{
 							"abc",
 							"def",
 						},
@@ -92,10 +92,10 @@ func Test_toYaml(t *testing.T) {
 		"MarshalYaml": {
 			reason: "Should return marshalled yaml",
 			args: args{
-				val: map[string]interface{}{
-					"complexDictionary": map[string]interface{}{
+				val: map[string]any{
+					"complexDictionary": map[string]any{
 						"scalar1": true,
-						"list": []interface{}{
+						"list": []any{
 							"abc",
 							"def",
 						},
@@ -499,6 +499,96 @@ func Test_getCompositeResource(t *testing.T) {
 	}
 }
 
+func Test_getComposedConnectionDetails(t *testing.T) {
+	type args struct {
+		req  map[string]any
+		name string
+	}
+
+	type want struct {
+		rsp map[string]any
+	}
+
+	connectionDetails := map[string]any{
+		"username": "dXNlcg==",
+		"password": "cGFzcw==",
+	}
+
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"RetrieveConnectionDetails": {
+			reason: "Should successfully retrieve connection details for a composed resource",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my-resource": map[string]any{
+								"connectionDetails": connectionDetails,
+							},
+						},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: connectionDetails},
+		},
+		"RetrieveConnectionDetailsWithDots": {
+			reason: "Should successfully retrieve connection details when identifier contains dots",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my.resource": map[string]any{
+								"connectionDetails": connectionDetails,
+							},
+						},
+					},
+				},
+				name: "my.resource",
+			},
+			want: want{rsp: connectionDetails},
+		},
+		"MissingConnectionDetails": {
+			reason: "Should return nil if the resource has no connectionDetails",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{
+							"my-resource": map[string]any{},
+						},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: nil},
+		},
+		"ResourceNotFound": {
+			reason: "Should return nil if the resource is not found",
+			args: args{
+				req: map[string]any{
+					"observed": map[string]any{
+						"resources": map[string]any{},
+					},
+				},
+				name: "my-resource",
+			},
+			want: want{rsp: nil},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := getComposedConnectionDetails(tc.args.req, tc.args.name)
+			if diff := cmp.Diff(tc.want.rsp, got); diff != "" {
+				t.Errorf("%s\ngetComposedConnectionDetails(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}
+
 func Test_getExtraResources(t *testing.T) {
 	type args struct {
 		req  map[string]any
@@ -533,6 +623,26 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should successfully retrieve the complete resource",
 			args: args{
 				req: map[string]any{
+					"requiredResources": map[string]any{
+						"flexserver": map[string]any{
+							"items": []any{
+								completeResource,
+							},
+						},
+					},
+				},
+				name: "flexserver",
+			},
+			want: want{
+				rsp: []any{
+					completeResource,
+				},
+			},
+		},
+		"RetrieveExtraResource": {
+			reason: "Should successfully retrieve the resource from extraResources",
+			args: args{
+				req: map[string]any{
 					"extraResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{
@@ -553,7 +663,7 @@ func Test_getExtraResources(t *testing.T) {
 			reason: "Should return empty list if no extra resources are found",
 			args: args{
 				req: map[string]any{
-					"extraResources": map[string]any{
+					"requiredResources": map[string]any{
 						"flexserver": map[string]any{
 							"items": []any{},
 						},

@@ -4,14 +4,15 @@ import (
 	"reflect"
 	"testing"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/test"
-	"github.com/crossplane/function-sdk-go/errors"
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+
+	"github.com/crossplane/function-sdk-go/errors"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
 func Test_UpdateClaimConditions(t *testing.T) {
@@ -126,7 +127,6 @@ func Test_UpdateClaimConditions(t *testing.T) {
 			if diff := cmp.Diff(tc.want.err, err, test.EquateErrors()); diff != "" {
 				t.Errorf("%s\nUpdateClaimConditions(...): -want err, +got err:\n%s", tc.reason, diff)
 			}
-
 		})
 	}
 }

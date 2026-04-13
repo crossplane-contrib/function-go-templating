@@ -8,11 +8,15 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	"dario.cat/mergo"
+	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -20,17 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-
 	"github.com/crossplane/function-sdk-go/errors"
 	"github.com/crossplane/function-sdk-go/logging"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/request"
 	"github.com/crossplane/function-sdk-go/resource"
 	"github.com/crossplane/function-sdk-go/response"
-
-	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 )
 
 // osFS is a dead-simple implementation of [io/fs.FS] that just wraps around
@@ -38,16 +37,18 @@ import (
 type osFS struct{}
 
 func (*osFS) Open(name string) (fs.File, error) {
-	return os.Open(name)
+	return os.Open(filepath.Clean(name))
 }
 
 // Function uses Go templates to compose resources.
 type Function struct {
 	fnv1.UnimplementedFunctionRunnerServiceServer
 
-	log  logging.Logger
-	fsys fs.FS
-	ttl  time.Duration
+	log            logging.Logger
+	fsys           fs.FS
+	ttl            time.Duration
+	defaultSource  string
+	defaultOptions string
 }
 
 type YamlErrorContext struct {
@@ -60,13 +61,13 @@ type YamlErrorContext struct {
 const (
 	annotationKeyCompositionResourceName = "gotemplating.fn.crossplane.io/composition-resource-name"
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
-	annotationKeyTtl                     = "gotemplating.fn.crossplane.io/ttl"
+	annotationKeyTTL                     = "gotemplating.fn.crossplane.io/ttl"
 
-	metaApiVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
+	metaAPIVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
 
 // RunFunction runs the Function.
-func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) {
+func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) (*fnv1.RunFunctionResponse, error) { //nolint:gocognit // this function needs to be refactored
 	f.log.Debug("Running Function", "tag", req.GetMeta().GetTag())
 	in := &v1beta1.GoTemplate{}
 
@@ -75,6 +76,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	if err := request.GetInput(req, in); err != nil {
 		response.Fatal(rsp, errors.Wrapf(err, "cannot get Function input from %T", req))
 		return rsp, nil
+	}
+	if in.Source == "" && f.defaultSource != "" {
+		in.Source = v1beta1.FileSystemSource
+		in.FileSystem = &v1beta1.TemplateSourceFileSystem{
+			DirPath: f.defaultSource,
+		}
 	}
 
 	if in.TTL != "" {
@@ -98,9 +105,15 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if in.Options != nil {
-		f.log.Debug("setting template options", "options", *in.Options)
-		err = safeApplyTemplateOptions(tmpl, *in.Options)
+	if in.Options != nil || f.defaultOptions != "" {
+		var o []string
+		if in.Options != nil {
+			o = *in.Options
+		} else {
+			o = strings.Split(f.defaultOptions, ",")
+		}
+		f.log.Debug("setting template options", "options", o)
+		err = safeApplyTemplateOptions(tmpl, o)
 		if err != nil {
 			response.Fatal(rsp, errors.Wrap(err, "cannot apply template options"))
 			return rsp, nil
@@ -136,7 +149,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	for {
 		u := &unstructured.Unstructured{}
 		if err := decoder.Decode(&u); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -145,12 +158,12 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			if yamlErr == (YamlErrorContext{}) {
 				newErr = err
 			} else {
-				context := strings.TrimSpace(yamlErr.Context)
-				if len(context) > 80 {
-					context = context[:80] + "..."
+				ctx := strings.TrimSpace(yamlErr.Context)
+				if len(ctx) > 80 {
+					ctx = ctx[:80] + "..."
 				}
 
-				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, context, yamlErr.Message)
+				newErr = fmt.Errorf("error converting YAML to JSON: yaml: line %d (document %d, line %d) near: '%s': %s", yamlErr.AbsLine, docIndex+1, yamlErr.RelLine, ctx, yamlErr.Message)
 			}
 
 			response.Fatal(rsp, errors.Wrap(newErr, "cannot decode manifest"))
@@ -198,18 +211,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector)}
+	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector), Resources: make(map[string]*fnv1.ResourceSelector)}
 
 	// Override the TTL if specified in the observed composite.
-	if v, found := observedComposite.Resource.GetAnnotations()[annotationKeyTtl]; found {
-
+	if v, found := observedComposite.Resource.GetAnnotations()[annotationKeyTTL]; found {
 		t, err := time.ParseDuration(v)
 		if err != nil {
 			f.log.Debug("Ignoring Ttl annotation, wrong format", v)
 		}
 		rsp.Meta.Ttl = durationpb.New(t)
 		// Remove meta annotation.
-		meta.RemoveAnnotations(observedComposite.Resource, annotationKeyTtl)
+		meta.RemoveAnnotations(observedComposite.Resource, annotationKeyTTL)
 	}
 
 	// Convert the rendered manifests to a list of desired composed resources.
@@ -218,43 +230,79 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		cd.Resource.Unstructured = *obj.DeepCopy()
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
+		// Check for ready state.
+		var ready *resource.Ready
+		if cd.Resource.GetAPIVersion() != metaAPIVersion {
+			if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
+				if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
+					response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
+					return rsp, nil
+				}
+
+				r := resource.Ready(v)
+				ready = &r
+
+				// Remove meta annotation.
+				meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
+			}
+		}
+
+		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Handle if the composite resource appears in the rendered template.
-		// Unless resource name annotation is present, update only the status of the desired composite resource.
+		// Unless resource name annotation is present, update only the status and ready state of the desired composite resource.
 		name, nameFound := obj.GetAnnotations()[annotationKeyCompositionResourceName]
 		if cd.Resource.GetAPIVersion() == observedComposite.Resource.GetAPIVersion() && cd.Resource.GetKind() == observedComposite.Resource.GetKind() && !nameFound {
 			dst := make(map[string]any)
-			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
-				return rsp, nil
+			dstExists := true
+			if err := desiredComposite.Resource.GetValueInto("status", &dst); err != nil {
+				if fieldpath.IsNotFound(err) {
+					dstExists = false
+				} else {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get desired composite status"))
+					return rsp, nil
+				}
 			}
 
 			src := make(map[string]any)
-			if err := cd.Resource.GetValueInto("status", &src); err != nil && !fieldpath.IsNotFound(err) {
-				response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
-				return rsp, nil
+			srcExists := true
+			if err := cd.Resource.GetValueInto("status", &src); err != nil {
+				if fieldpath.IsNotFound(err) {
+					srcExists = false
+				} else {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get templated composite status"))
+					return rsp, nil
+				}
 			}
 
-			if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
-				response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
-				return rsp, nil
+			// Only update status if there's either existing status or new status content.
+			if dstExists || srcExists {
+				if err := mergo.Merge(&dst, src, mergo.WithOverride); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot merge desired composite status"))
+					return rsp, nil
+				}
+
+				if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
+					return rsp, nil
+				}
 			}
 
-			if err := fieldpath.Pave(desiredComposite.Resource.Object).SetValue("status", dst); err != nil {
-				response.Fatal(rsp, errors.Wrap(err, "cannot set desired composite status"))
-				return rsp, nil
+			// Set ready state.
+			if ready != nil {
+				desiredComposite.Ready = *ready
 			}
 
 			continue
 		}
 
 		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
-		if cd.Resource.GetAPIVersion() == metaApiVersion {
+		if cd.Resource.GetAPIVersion() == metaAPIVersion {
 			switch obj.GetKind() {
 			case "CompositeConnectionDetails":
 				// Set composite resource's connection details.
 				con, _ := cd.Resource.GetStringObject("data")
 				for k, v := range con {
-					d, _ := base64.StdEncoding.DecodeString(v) //nolint:errcheck // k8s returns secret values encoded
+					d, _ := base64.StdEncoding.DecodeString(v)
 					desiredComposite.ConnectionDetails[k] = d
 				}
 			case "ClaimConditions":
@@ -265,11 +313,11 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 				}
 				err := UpdateClaimConditions(rsp, conditions...)
 				if err != nil {
-					return rsp, nil
+					return rsp, nil //nolint:nilerr // Fatal response was generated by the called function.
 				}
-				f.log.Debug("updating ClaimConditions", "conditions", rsp.Conditions)
+				f.log.Debug("updating ClaimConditions", "conditions", rsp.GetConditions())
 			case "Context":
-				contextData := make(map[string]interface{})
+				contextData := make(map[string]any)
 				if err = cd.Resource.GetValueInto("data", &contextData); err != nil {
 					response.Fatal(rsp, errors.Wrap(err, "cannot get Contexts from input"))
 					return rsp, nil
@@ -297,32 +345,26 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 					return rsp, nil
 				}
 				for k, v := range ers {
-					if _, found := requirements.ExtraResources[k]; found {
+					if _, found := requirements.GetExtraResources()[k]; found { //nolint:staticcheck // need to support Crossplane v1
 						response.Fatal(rsp, errors.Errorf("duplicate extra resource key %q", k))
 						return rsp, nil
 					}
-					requirements.ExtraResources[k] = v.ToResourceSelector()
+					requirements.Resources[k] = v.ToResourceSelector()
+					if v.Namespace == "" {
+						requirements.ExtraResources[k] = v.ToResourceSelector() //nolint:staticcheck // need to support Crossplane v1
+					}
 				}
 			default:
-				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaApiVersion))
+				response.Fatal(rsp, errors.Errorf("invalid kind %q for apiVersion %q - must be one of CompositeConnectionDetails, Context or ExtraResources", obj.GetKind(), metaAPIVersion))
 				return rsp, nil
 			}
 
 			continue
 		}
 
-		// TODO(ezgidemirel): Refactor to reduce cyclomatic complexity.
 		// Set ready state.
-		if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
-			if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
-				response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
-				return rsp, nil
-			}
-
-			cd.Ready = resource.Ready(v)
-
-			// Remove meta annotation.
-			meta.RemoveAnnotations(cd.Resource, annotationKeyReady)
+		if ready != nil {
+			cd.Ready = *ready
 		}
 
 		// Remove resource name annotation.
@@ -350,13 +392,22 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		return rsp, nil
 	}
 
-	if len(requirements.ExtraResources) > 0 {
+	if len(requirements.GetExtraResources()) > 0 || len(requirements.GetResources()) > 0 { //nolint:staticcheck // need to support Crossplane v1
 		rsp.Requirements = requirements
 	}
 
-	if len(req.ExtraResources) > 0 {
+	if len(req.GetExtraResources()) > 0 { //nolint:staticcheck // need to support Crossplane v1
 		err = mergeExtraResourcesToContext(req, rsp)
 		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot get merge extra resources to content"))
+			return rsp, nil
+		}
+	}
+
+	if len(req.GetRequiredResources()) > 0 {
+		err = mergeRequiredResourcesToContext(req, rsp)
+		if err != nil {
+			response.Fatal(rsp, errors.Wrap(err, "cannot get merge required resources to content"))
 			return rsp, nil
 		}
 	}
@@ -375,6 +426,14 @@ func convertToMap(req *fnv1.RunFunctionRequest) (map[string]any, error) {
 	var mReq map[string]any
 	if err := json.Unmarshal(jReq, &mReq); err != nil {
 		return nil, errors.Wrap(err, "cannot unmarshal json to map[string]any")
+	}
+
+	_, ok := mReq["extraResources"]
+	if !ok {
+		r, ok := mReq["requiredResources"]
+		if ok {
+			mReq["extraResources"] = r
+		}
 	}
 
 	return mReq, nil

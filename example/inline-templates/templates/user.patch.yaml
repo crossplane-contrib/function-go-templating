@@ -1,0 +1,10 @@
+- op: add
+  path: /spec/pipeline/0/input/inline/templates/-
+  value: |
+    apiVersion: iam.aws.upbound.io/v1beta1
+    kind: User
+    metadata:
+      annotations:
+        gotemplating.fn.crossplane.io/composition-resource-name: user
+    spec:
+      forProvider: {}

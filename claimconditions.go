@@ -1,11 +1,12 @@
 package main
 
 import (
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/crossplane/function-sdk-go/response"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // A CompositionTarget is the target of a composition event or condition.
@@ -15,7 +16,8 @@ type CompositionTarget string
 // process. It can target either the XR only, or both the XR and the claim.
 type TargetedCondition struct {
 	xpv1.Condition `json:",inline"`
-	Target         CompositionTarget `json:"target"`
+
+	Target CompositionTarget `json:"target"`
 }
 
 // Composition event and condition targets.
@@ -24,13 +26,13 @@ const (
 	CompositionTargetCompositeAndClaim CompositionTarget = "CompositeAndClaim"
 )
 
-// UpdateClaimConditions updates Conditions in the Claim and Composite
+// UpdateClaimConditions updates Conditions in the Claim and Composite.
 func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...TargetedCondition) error {
 	if rsp == nil {
 		return nil
 	}
 	for _, c := range conditions {
-		if xpv1.IsSystemConditionType(xpv1.ConditionType(c.Type)) {
+		if xpv1.IsSystemConditionType(c.Type) {
 			response.Fatal(rsp, errors.Errorf("cannot set ClaimCondition type: %s is a reserved Crossplane Condition", c.Type))
 			return errors.New("error updating response")
 		}
@@ -40,15 +42,15 @@ func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...Targeted
 	return nil
 }
 
-// transformCondition converts a TargetedCondition to be compatible with the Protobuf SDK
+// transformCondition converts a TargetedCondition to be compatible with the Protobuf SDK.
 func transformCondition(tc TargetedCondition) *fnv1.Condition {
 	c := &fnv1.Condition{
-		Type:   string(tc.Condition.Type),
-		Reason: string(tc.Condition.Reason),
+		Type:   string(tc.Type),
+		Reason: string(tc.Reason),
 		Target: transformTarget(tc.Target),
 	}
 
-	switch tc.Condition.Status {
+	switch tc.Status {
 	case corev1.ConditionTrue:
 		c.Status = fnv1.Status_STATUS_CONDITION_TRUE
 	case corev1.ConditionFalse:
@@ -66,7 +68,7 @@ func transformCondition(tc TargetedCondition) *fnv1.Condition {
 }
 
 // transformTarget converts the input into a target Go SDK Enum
-// Default to TARGET_COMPOSITE
+// Default to TARGET_COMPOSITE.
 func transformTarget(ct CompositionTarget) *fnv1.Target {
 	if ct == CompositionTargetCompositeAndClaim {
 		return fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum().Enum()
@@ -74,7 +76,7 @@ func transformTarget(ct CompositionTarget) *fnv1.Target {
 	return fnv1.Target_TARGET_COMPOSITE.Enum()
 }
 
-// UpdateResponseWithCondition updates the RunFunctionResponse with a Condition
+// UpdateResponseWithCondition updates the RunFunctionResponse with a Condition.
 func UpdateResponseWithCondition(rsp *fnv1.RunFunctionResponse, c *fnv1.Condition) {
 	if rsp == nil {
 		return
