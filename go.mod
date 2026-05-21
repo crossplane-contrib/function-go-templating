@@ -1,6 +1,6 @@
 module github.com/crossplane-contrib/function-go-templating
 
-go 1.25.9
+go 1.25.10
 
 require (
 	dario.cat/mergo v1.0.2
