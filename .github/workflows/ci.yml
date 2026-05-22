@@ -14,14 +14,14 @@ on:
 
 env:
   # Common versions
-  GO_VERSION: '1.25.9'
+  GO_VERSION: '1.25.10'
   GOLANGCI_VERSION: 'v2.11.3'
   DOCKER_BUILDX_VERSION: 'v0.23.0'
 
   # These environment variables are important to the Crossplane CLI install.sh
   # script. They determine what version it installs.
-  XP_CHANNEL: master   # TODO(negz): Pin to stable once v1.14 is released.
-  XP_VERSION: current  # TODO(negz): Pin to a version once v1.14 is released.
+  XP_CHANNEL: stable
+  XP_VERSION: v1.18.2
 
   # This CI job will automatically push new builds to xpkg.upbound.io if the
   # XPKG_ACCESS_ID and XPKG_TOKEN secrets are set in the GitHub respository (or
