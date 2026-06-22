@@ -3,7 +3,7 @@ kind: Function
 metadata:
   name: function-go-templating
 spec:
-  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.0
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.12.2
 ---
 apiVersion: example.crossplane.io/v1beta1
 kind: XR
