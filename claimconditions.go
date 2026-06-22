@@ -1,7 +1,7 @@
 package main
 
 import (
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crossplane/function-sdk-go/errors"
@@ -15,7 +15,7 @@ type CompositionTarget string
 // A TargetedCondition represents a condition produced by the composition
 // process. It can target either the XR only, or both the XR and the claim.
 type TargetedCondition struct {
-	xpv1.Condition `json:",inline"`
+	xpv2.Condition `json:",inline"`
 
 	Target CompositionTarget `json:"target"`
 }
@@ -32,7 +32,7 @@ func UpdateClaimConditions(rsp *fnv1.RunFunctionResponse, conditions ...Targeted
 		return nil
 	}
 	for _, c := range conditions {
-		if xpv1.IsSystemConditionType(c.Type) {
+		if xpv2.IsSystemConditionType(c.Type) {
 			response.Fatal(rsp, errors.Errorf("cannot set ClaimCondition type: %s is a reserved Crossplane Condition", c.Type))
 			return errors.New("error updating response")
 		}

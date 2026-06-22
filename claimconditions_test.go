@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
@@ -40,7 +40,7 @@ func Test_UpdateClaimConditions(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{},
 				c: []TargetedCondition{
 					{
-						Condition: xpv1.Condition{
+						Condition: xpv2.Condition{
 							Message: "Ready Message",
 							Status:  v1.ConditionTrue,
 							Type:    "Ready",
@@ -68,7 +68,7 @@ func Test_UpdateClaimConditions(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{},
 				c: []TargetedCondition{
 					{
-						Condition: xpv1.Condition{
+						Condition: xpv2.Condition{
 							Message: "Creating Resource",
 							Status:  v1.ConditionFalse,
 							Type:    "NetworkReady",
@@ -76,7 +76,7 @@ func Test_UpdateClaimConditions(t *testing.T) {
 						Target: CompositionTargetCompositeAndClaim,
 					},
 					{
-						Condition: xpv1.Condition{
+						Condition: xpv2.Condition{
 							Message: "Ready Message",
 							Status:  v1.ConditionTrue,
 							Type:    "DatabaseReady",
@@ -84,7 +84,7 @@ func Test_UpdateClaimConditions(t *testing.T) {
 						Target: CompositionTargetComposite,
 					},
 					{
-						Condition: xpv1.Condition{
+						Condition: xpv2.Condition{
 							Message: "No Target should add CompositeAndClaim",
 							Status:  v1.ConditionTrue,
 							Type:    "NoTarget",
@@ -144,7 +144,7 @@ func Test_transformCondition(t *testing.T) {
 			reason: "Basic Target",
 			args: args{
 				tc: TargetedCondition{
-					Condition: xpv1.Condition{
+					Condition: xpv2.Condition{
 						Message: "Basic Message",
 						Status:  v1.ConditionTrue,
 						Type:    "TestType",
@@ -163,7 +163,7 @@ func Test_transformCondition(t *testing.T) {
 			reason: "Default Settings",
 			args: args{
 				tc: TargetedCondition{
-					Condition: xpv1.Condition{},
+					Condition: xpv2.Condition{},
 				},
 			},
 			want: &fnv1.Condition{
@@ -175,7 +175,7 @@ func Test_transformCondition(t *testing.T) {
 			reason: "When Status is false and no target set",
 			args: args{
 				tc: TargetedCondition{
-					Condition: xpv1.Condition{
+					Condition: xpv2.Condition{
 						Message: "Basic Message",
 						Status:  v1.ConditionFalse,
 						Type:    "TestType",
