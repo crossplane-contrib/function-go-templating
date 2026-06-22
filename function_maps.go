@@ -9,8 +9,8 @@ import (
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/fieldpath"
+	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -87,16 +87,16 @@ func fromYaml(val string) (any, error) {
 	return res, err
 }
 
-func getResourceCondition(ct string, res map[string]any) xpv1.Condition {
-	var conditioned xpv1.ConditionedStatus
+func getResourceCondition(ct string, res map[string]any) xpv2.Condition {
+	var conditioned xpv2.ConditionedStatus
 	if err := fieldpath.Pave(res).GetValueInto("resource.status", &conditioned); err != nil {
 		if err := fieldpath.Pave(res).GetValueInto("status", &conditioned); err != nil {
-			conditioned = xpv1.ConditionedStatus{}
+			conditioned = xpv2.ConditionedStatus{}
 		}
 	}
 
 	// Return either found condition or empty one with "Unknown" status
-	return conditioned.GetCondition(xpv1.ConditionType(ct))
+	return conditioned.GetCondition(xpv2.ConditionType(ct))
 }
 
 func setResourceNameAnnotation(name string) string {

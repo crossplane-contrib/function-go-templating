@@ -5,7 +5,7 @@ import (
 	"testing"
 	"text/template"
 
-	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	v2 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -134,7 +134,7 @@ func Test_getResourceCondition(t *testing.T) {
 	}
 
 	type want struct {
-		rsp v1.Condition
+		rsp v2.Condition
 	}
 	cases := map[string]struct {
 		reason string
@@ -159,7 +159,7 @@ func Test_getResourceCondition(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: v1.Condition{
+				rsp: v2.Condition{
 					Type:   "Ready",
 					Status: "True",
 				},
@@ -181,7 +181,7 @@ func Test_getResourceCondition(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: v1.Condition{
+				rsp: v2.Condition{
 					Type:   "Ready",
 					Status: "True",
 				},
@@ -196,7 +196,7 @@ func Test_getResourceCondition(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: v1.Condition{
+				rsp: v2.Condition{
 					Type:   "Ready",
 					Status: "Unknown",
 				},
@@ -220,7 +220,7 @@ func Test_getResourceCondition(t *testing.T) {
 				},
 			},
 			want: want{
-				rsp: v1.Condition{
+				rsp: v2.Condition{
 					Type:   "Ready",
 					Status: "Unknown",
 				},
