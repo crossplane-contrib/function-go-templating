@@ -19,7 +19,7 @@ type CLI struct {
 	TLSCertsDir        string `env:"TLS_SERVER_CERTS_DIR"                                                                           help:"Directory containing server certs (tls.key, tls.crt) and the CA used to verify client certificates (ca.crt)"`
 	Insecure           bool   `help:"Run without mTLS credentials. If you supply this flag --tls-server-certs-dir will be ignored."`
 	TTL                string `default:"${defaultTTL}"                                                                              help:"Function global setting for response TTL."`
-	MaxRecvMessageSize int    `default:"4"                                                                                          help:"Maximum size of received messages in MB."`
+	MaxRecvMessageSize int    `default:"4"                                                                                          env:"FUNCTION_GO_TEMPLATING_MAX_RECV_MESSAGE_SIZE"                                                                 help:"Maximum size of received messages in MB."`
 	DefaultSource      string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_SOURCE"                                                                        help:"Default template source to use when input is not provided to the function."`
 	DefaultOptions     string `default:""                                                                                           env:"FUNCTION_GO_TEMPLATING_DEFAULT_OPTIONS"                                                                       help:"Comma-separated default template options to use when input is not provided to the function."`
 }
