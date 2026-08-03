@@ -63,6 +63,10 @@ const (
 	annotationKeyReady                   = "gotemplating.fn.crossplane.io/ready"
 	annotationKeyTTL                     = "gotemplating.fn.crossplane.io/ttl"
 
+	// readyStatusUnknown is the Kubernetes condition status value
+	// (corev1.ConditionUnknown) that corresponds to resource.ReadyUnspecified.
+	readyStatusUnknown = "Unknown"
+
 	metaAPIVersion = "meta.gotemplating.fn.crossplane.io/v1alpha1"
 )
 
@@ -234,6 +238,14 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 		var ready *resource.Ready
 		if cd.Resource.GetAPIVersion() != metaAPIVersion {
 			if v, found := cd.Resource.GetAnnotations()[annotationKeyReady]; found {
+				// Kubernetes condition status uses "Unknown" where this
+				// function uses "Unspecified". Accept "Unknown" as an alias
+				// so users can pass a resource's condition status straight
+				// through, e.g. via getResourceCondition.
+				if v == readyStatusUnknown {
+					v = string(resource.ReadyUnspecified)
+				}
+
 				if v != string(resource.ReadyTrue) && v != string(resource.ReadyUnspecified) && v != string(resource.ReadyFalse) {
 					response.Fatal(rsp, errors.Errorf("invalid function input: invalid %q annotation value %q: must be True, False, or Unspecified", annotationKeyReady, v))
 					return rsp, nil
