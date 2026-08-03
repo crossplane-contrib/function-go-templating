@@ -48,11 +48,10 @@ func (e *ExtraResourcesRequirement) ToResourceSelector() *fnv1.ResourceSelector 
 		out.Match = &fnv1.ResourceSelector_MatchLabels{
 			MatchLabels: &fnv1.MatchLabels{Labels: e.MatchLabels},
 		}
-		return out
-	}
-
-	out.Match = &fnv1.ResourceSelector_MatchName{
-		MatchName: e.MatchName,
+	} else {
+		out.Match = &fnv1.ResourceSelector_MatchName{
+			MatchName: e.MatchName,
+		}
 	}
 
 	if e.Namespace != "" {
