@@ -1,26 +1,206 @@
+// SPDX-FileCopyrightText: 2026 The Crossplane Authors <https://crossplane.io>
+//
+// SPDX-License-Identifier: Apache-2.0
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
+  // The maximum number of PRs to be created in parallel
+  "prConcurrentLimit": 5,
+  // The branches renovate should target
+  "baseBranchPatterns": ["main"],
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+  // All PRs should have a label
+  "labels": ["automated", "renovate"],
   "crossplane": {
-    "managerFilePatterns": [
-      "/(^|/)example/.*\\.ya?ml$/"
-    ]
+    "managerFilePatterns": ["/(^|/)example/.*\\.ya?ml$/"]
   },
-  "packageRules": [
+  "customManagers": [
     {
-      "matchManagers": [
-        "crossplane"
+      // Go version in GH action workflows
+      "customType": "regex",
+      "description": "Bump Go version in GH Action workflows",
+      "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/", "Dockerfile"],
+      "matchStrings": [
+        "GO_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n",
+        "^ARG GO_VERSION=(?<currentValue>.*?)"
       ],
-      "matchFileNames": [
-        "example/**"
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "go",
+      "packageNameTemplate": "go",
+      "depTypeTemplate": "golang"
+    },
+    {
+      // golangci-lint versions used through env variables in any GH Actions
+      "customType": "regex",
+      "description": "Bump golangci-lint version in workflows",
+      "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "GOLANGCI_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n",
+        "GOLANGCILINT_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n"
       ],
-      "groupName": "examples"
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "golangci/golangci-lint"
+    },
+    {
+      // DOCKER_BUILDX_VERSION in GH action workflows
+      "customType": "regex",
+      "description": "Bump Docker Buildx version in workflows",
+      "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "DOCKER_BUILDX_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "docker/buildx"
+    },
+    {
+      // Crossplane CLI version in GH action workflows
+      // This follows github-releases, so assumes 
+      // `stable` channel for `XP_CHANNEL`
+      "customType": "regex",
+      "description": "Bump Crossplane CLI version in GH action workflows",
+      "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "XP_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "crossplane/cli"
     }
   ],
-  "postUpdateOptions": [
-    "gomodTidy",
-    "gomodUpdateImportPaths"
+  // PackageRules disabled below should be enabled in case of vulnerabilities
+  "vulnerabilityAlerts": {"enabled": true},
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "matchManagers": ["crossplane"],
+      "matchFileNames": ["example/**"],
+      "groupName": "examples"
+    },
+    {
+      // Ignore k8s.io/client-go older versions as they switched to
+      // semantic version and old tags are still available in the repo.
+      "matchDatasources": ["go"],
+      "matchDepNames": ["k8s.io/client-go"],
+      "allowedVersions": "<1.0"
+    },
+    {
+      // single PR for all the patch bumps of kubernetes related
+      // dependencies, as most of the time these are all strictly related.
+      "matchDatasources": ["go"],
+      "groupName": "kubernetes patches",
+      "matchUpdateTypes": ["patch", "digest"],
+      // Do not include k8s.io/utils and k8s.io/kube-openapi, they have no version tags
+      // let other k8s dependencies auto-manage them transitively
+      "matchPackageNames": ["k8s.io{/,}**", "sigs.k8s.io{/,}**", "!k8s.io/utils{/,}**", "!k8s.io/kube-openapi{/,}**"]
+    },
+    {
+      // Dedicated PRs for each minor and major bumps to kubernetes related
+      // dependencies.
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["major", "minor"],
+      "matchPackageNames": ["k8s.io{/,}**", "sigs.k8s.io{/,}**"],
+      // k8s library minor versions should typically follow
+      // crossplane-runtime for maximum compatibility.
+      // Let minor versions managed transitively and require
+      // dashboard approval.
+      "dependencyDashboardApproval": true
+    },
+    {
+      // Go XP dependencies separate major/minor/patch PRs
+      "description": "Separate PRs for major/minor/patch Crossplane Go dependencies",
+      "matchDatasources": ["go"],
+      "matchPackageNames": ["github.com/crossplane{/,}**"],
+      "separateMultipleMinor": true,
+      "separateMinorPatch": true,
+      "separateMajorMinor": true
+    },
+    {
+      // Allow Crossplane Go dependencies patch version bumps
+      "description": "Crossplane Go dependencies patch versions",
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["patch"],
+      "matchPackageNames": ["github.com/crossplane{/,}**"]
+    },
+    {
+      // Go XP dependencies major/minor/digest with dashboard approval
+      // These potentially might involve dev work, so PRs should 
+      // be either dashboard approved or opened as part of the dev work
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["major", "minor", "digest"],
+      "matchPackageNames": ["github.com/crossplane{/,}**"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      // Explicitly disable k8s.io/utils and k8s.io/kube-openapi digest updates,
+      // they have no version tags, let other k8s dependencies auto-manage them
+      // transitively
+      "matchDatasources": ["go"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false,
+      "matchPackageNames": ["k8s.io/utils{/,}**", "k8s.io/kube-openapi{/,}**"]
+    },
+    {
+      // Dedicated PRs for each bump to non-kubernetes and non-XP Go dependencies,
+      // but only if there are known vulnerabilities in the current version.
+      "matchDatasources": ["go"],
+      "matchPackageNames": ["!k8s.io{/,}**", "!sigs.k8s.io{/,}**", "!github.com/crossplane{/,}**"],
+      "enabled": false,
+      "matchUpdateTypes": ["major"]
+    },
+    {
+      // Single PR for all minor and patch bumps to non-kubernetes and non-XP Go
+      // dependencies, but only if there are known vulnerabilities in the current
+      // version.
+      "matchDatasources": ["go"],
+      "matchPackageNames": ["!k8s.io{/,}**", "!sigs.k8s.io{/,}**", "!github.com/crossplane{/,}**"],
+      "enabled": false,
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "all non-major go dependencies"
+    },
+    {
+      // Single PR for all minor and patch bumps of Github Actions
+      "matchDepTypes": ["action"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major github action",
+      "minimumReleaseAge": "3 days",
+      "pinDigests": true
+    },
+    {
+      // Single PR for bumping Crossplane and Crossplane CLI versions in CI
+      "matchDepNames": ["crossplane/crossplane", "crossplane/cli"],
+      "groupName": "crossplane versions in CI",
+      "groupSlug": "crossplane-in-ci"
+    },
+    {
+      // Single PR for bumping golangci-lint versions
+      "matchDepNames": ["golangci/golangci-lint"],
+      "groupName": "golangci-lint versions in CI",
+      "groupSlug": "golangci-lint-in-ci"
+    },
+    {
+      // Allow bumping the go version directive at go.mod
+      "matchDatasources": ["golang-version"],
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "rangeStrategy": "bump"
+    },
+    {
+      // Single PR for bumping Go version at the CI env vars and go.mod
+      "matchDatasources": ["golang-version"],
+      "matchPackageNames": ["go"],
+      "matchManagers": ["gomod", "custom.regex"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "separateMinorPatch": true,
+      "groupName": "golang versions",
+      "groupSlug": "golang-versions",
+      "enabled": true
+    },
+    {
+      // We want dedicated PRs for each major bump to Github Actions
+      "matchDepTypes": ["action"],
+      "minimumReleaseAge": "3 days",
+      "pinDigests": true
+    }
   ]
 }
