@@ -22,7 +22,7 @@
       "managerFilePatterns": ["/^\\.github\\/workflows\\/[^/]+\\.ya?ml$/", "Dockerfile"],
       "matchStrings": [
         "GO_VERSION: ['\"]?(?<currentValue>.*?)['\"]?\\n",
-        "^ARG GO_VERSION=(?<currentValue>.*?)"
+        "ARG GO_VERSION=(?<currentValue>.*?)\\n"
       ],
       "datasourceTemplate": "golang-version",
       "depNameTemplate": "go",
