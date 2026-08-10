@@ -52,6 +52,7 @@ metadata:
 	xrWithReadyTrue                = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithReadyFalse               = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"False"},"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithReadyUnspecified         = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"Unspecified"},"name":"cool-xr"},"spec":{"count":2}}`
+	xrWithReadyUnknown             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"Unknown"},"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithReadyWrong               = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithReadyTrueAndResourceName = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"xr-as-composed","gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithReadyTrueAndStatus       = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"annotations":{"gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-xr"},"spec":{"count":2},"status":{"phase":"Ready","message":"Composite resource is ready"}}`
@@ -1410,6 +1411,39 @@ func TestRunFunction(t *testing.T) {
 						&v1beta1.GoTemplate{
 							Source: v1beta1.InlineSource,
 							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyUnspecified},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+							Ready:    0,
+						},
+					},
+				},
+			},
+		},
+		"CompositeResourceReadyUnknownAlias": {
+			reason: "The Function should treat an \"Unknown\" ready annotation value, e.g. from a Kubernetes condition status, as an alias for Unspecified.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: xrWithReadyUnknown},
 						}),
 					Observed: &fnv1.State{
 						Composite: &fnv1.Resource{
