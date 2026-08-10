@@ -79,8 +79,7 @@ environment variable.  Setting the default-options to "missingkey=error" will ca
 engine to return an error when a missing key is detected, instead of setting the value to "<no value>".
 
 The maximum size of received messages (in MB) defaults to `4`. This can be overridden by the
-`--max-recv-message-size` CLI flag or the `FUNCTION_GO_TEMPLATING_MAX_RECV_MESSAGE_SIZE`
-environment variable.
+`--max-recv-message-size` CLI flag or the `MAX_RECV_MESSAGE_SIZE` environment variable.
 
 ### Connection Details
 
