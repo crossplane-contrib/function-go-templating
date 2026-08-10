@@ -467,8 +467,8 @@ func getYamlErrorContextFromErr(err error, startLine int, lines []string) YamlEr
 		// Extract the rest of the error message after the matched prefix.
 		prefix := fmt.Sprintf("error converting YAML to JSON: yaml: line %d:", relLine)
 		errStr := err.Error()
-		if idx := strings.Index(errStr, prefix); idx != -1 {
-			errMsg = strings.TrimSpace(errStr[idx+len(prefix):])
+		if after, found := strings.CutPrefix(errStr, prefix); found {
+			errMsg = strings.TrimSpace(after)
 		}
 	}
 	if scanErr == nil && n == 1 {

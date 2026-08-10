@@ -117,6 +117,7 @@ linters:
       check-type-assertions: false
       check-blank: false
     goconst:
+      ignore-tests: true
       min-len: 3
       min-occurrences: 5
     gocritic:
