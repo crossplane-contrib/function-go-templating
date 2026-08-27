@@ -39,12 +39,10 @@ func Test_UpdateClaimConditions(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{},
 				c: []TargetedCondition{
 					{
-						Condition: xpv2.Condition{
-							Message: "Ready Message",
-							Status:  v1.ConditionTrue,
-							Type:    "Ready",
-						},
-						Target: CompositionTargetComposite,
+						Message: "Ready Message",
+						Status:  v1.ConditionTrue,
+						Type:    "Ready",
+						Target:  CompositionTargetComposite,
 					},
 				},
 			},
@@ -67,27 +65,21 @@ func Test_UpdateClaimConditions(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{},
 				c: []TargetedCondition{
 					{
-						Condition: xpv2.Condition{
-							Message: "Creating Resource",
-							Status:  v1.ConditionFalse,
-							Type:    "NetworkReady",
-						},
-						Target: CompositionTargetCompositeAndClaim,
+						Message: "Creating Resource",
+						Status:  v1.ConditionFalse,
+						Type:    "NetworkReady",
+						Target:  CompositionTargetCompositeAndClaim,
 					},
 					{
-						Condition: xpv2.Condition{
-							Message: "Ready Message",
-							Status:  v1.ConditionTrue,
-							Type:    "DatabaseReady",
-						},
-						Target: CompositionTargetComposite,
+						Message: "Ready Message",
+						Status:  v1.ConditionTrue,
+						Type:    "DatabaseReady",
+						Target:  CompositionTargetComposite,
 					},
 					{
-						Condition: xpv2.Condition{
-							Message: "No Target should add CompositeAndClaim",
-							Status:  v1.ConditionTrue,
-							Type:    "NoTarget",
-						},
+						Message: "No Target should add CompositeAndClaim",
+						Status:  v1.ConditionTrue,
+						Type:    "NoTarget",
 					},
 				},
 			},
