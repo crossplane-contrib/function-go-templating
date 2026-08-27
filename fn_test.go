@@ -1115,7 +1115,7 @@ func TestRunFunction(t *testing.T) {
 					Meta:    &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
 					Results: []*fnv1.Result{},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{ //nolint:staticcheck  // maintain support for deprecated interface
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
@@ -1731,7 +1731,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{ //nolint:staticcheck  // maintain support for deprecated interface
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",
@@ -1780,7 +1780,7 @@ func TestRunFunction(t *testing.T) {
 							}
 						}
 					}`),
-					ExtraResources: map[string]*fnv1.Resources{
+					ExtraResources: map[string]*fnv1.Resources{ //nolint:staticcheck  // maintain support for deprecated interface
 						"cool-extra-resource": {
 							Items: []*fnv1.Resource{
 								{
@@ -1835,7 +1835,7 @@ func TestRunFunction(t *testing.T) {
 						},
 					},
 					Requirements: &fnv1.Requirements{
-						ExtraResources: map[string]*fnv1.ResourceSelector{
+						ExtraResources: map[string]*fnv1.ResourceSelector{ //nolint:staticcheck  // maintain support for deprecated interface
 							"cool-extra-resource": {
 								ApiVersion: "example.org/v1",
 								Kind:       "CoolExtraResource",

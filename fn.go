@@ -215,7 +215,7 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 	}
 
 	// Initialize the requirements.
-	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector), Resources: make(map[string]*fnv1.ResourceSelector)}
+	requirements := &fnv1.Requirements{ExtraResources: make(map[string]*fnv1.ResourceSelector), Resources: make(map[string]*fnv1.ResourceSelector)} //nolint:staticcheck // continue supporting deprecated interface
 
 	// Override the TTL if specified in the observed composite.
 	if v, found := observedComposite.Resource.GetAnnotations()[annotationKeyTTL]; found {

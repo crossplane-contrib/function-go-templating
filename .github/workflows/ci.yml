@@ -15,7 +15,7 @@ on:
 env:
   # Common versions
   GO_VERSION: '1.25.14'
-  GOLANGCI_VERSION: 'v2.12.2'
+  GOLANGCI_VERSION: 'v2.13.1'
   DOCKER_BUILDX_VERSION: 'v0.36.1'
 
   # These environment variables are important to the Crossplane CLI install.sh
