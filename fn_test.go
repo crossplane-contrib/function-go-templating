@@ -9,15 +9,13 @@ import (
 
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/response"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
-	"k8s.io/utils/ptr"
-
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
-	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/crossplane/function-sdk-go/response"
 )
 
 var (
@@ -913,21 +911,21 @@ func TestRunFunction(t *testing.T) {
 							Type:    "TestCondition",
 							Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 							Reason:  "InstallFail",
-							Message: ptr.To("failed to install"),
+							Message: new("failed to install"),
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 						{
 							Type:    "ConditionTrue",
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Reason:  "this condition is true",
-							Message: ptr.To("we are true"),
+							Message: new("we are true"),
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 						{
 							Type:    "DatabaseReady",
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Reason:  "Ready",
-							Message: ptr.To("Database is ready"),
+							Message: new("Database is ready"),
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						},
 					},
@@ -1916,7 +1914,7 @@ func TestRunFunction(t *testing.T) {
 								Match: &fnv1.ResourceSelector_MatchName{
 									MatchName: "cool-extra-resource",
 								},
-								Namespace: ptr.To("default"),
+								Namespace: new("default"),
 							},
 						},
 					},
