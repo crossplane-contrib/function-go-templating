@@ -9,13 +9,14 @@ import (
 
 	"github.com/crossplane-contrib/function-go-templating/input/v1beta1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
-	"github.com/crossplane/function-sdk-go/resource"
-	"github.com/crossplane/function-sdk-go/response"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
+	"github.com/crossplane/function-sdk-go/resource"
+	"github.com/crossplane/function-sdk-go/response"
 )
 
 var (

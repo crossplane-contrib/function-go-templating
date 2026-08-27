@@ -6,11 +6,12 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 	xpv2 "github.com/crossplane/crossplane/apis/v2/core/v2"
-	"github.com/crossplane/function-sdk-go/errors"
-	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/crossplane/function-sdk-go/errors"
+	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
 )
 
 func Test_UpdateClaimConditions(t *testing.T) {
