@@ -97,6 +97,10 @@ linters:
     # against idiomatic Go programming, which encourages this approach - e.g.
     # to scope errors.
     - noinlineerr
+
+    # Warns about code that can be modernized. These are cosmetic improvements
+    # that don't affect functionality. Disabled to keep CVE fix PRs focused.
+    - modernize
   settings:
     depguard:
       rules:
