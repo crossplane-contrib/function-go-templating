@@ -97,6 +97,12 @@ linters:
     # against idiomatic Go programming, which encourages this approach - e.g.
     # to scope errors.
     - noinlineerr
+
+    # Warns about outdated Go patterns like ptr.To() vs new(). While these
+    # suggestions may improve code style, they require extensive changes to
+    # test files and the ptr.To() pattern is widely used in the Kubernetes
+    # ecosystem. We can revisit this in a dedicated code modernization effort.
+    - modernize
   settings:
     depguard:
       rules:
