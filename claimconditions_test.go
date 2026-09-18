@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/crossplane/function-sdk-go/errors"
 	fnv1 "github.com/crossplane/function-sdk-go/proto/v1"
@@ -96,19 +95,19 @@ func Test_UpdateClaimConditions(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{
 					Conditions: []*fnv1.Condition{
 						{
-							Message: ptr.To("Creating Resource"),
+							Message: new("Creating Resource"),
 							Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 							Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
 							Type:    "NetworkReady",
 						},
 						{
-							Message: ptr.To("Ready Message"),
+							Message: new("Ready Message"),
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 							Type:    "DatabaseReady",
 						},
 						{
-							Message: ptr.To("No Target should add CompositeAndClaim"),
+							Message: new("No Target should add CompositeAndClaim"),
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 							Type:    "NoTarget",
@@ -153,7 +152,7 @@ func Test_transformCondition(t *testing.T) {
 				},
 			},
 			want: &fnv1.Condition{
-				Message: ptr.To("Basic Message"),
+				Message: new("Basic Message"),
 				Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 				Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 				Type:    "TestType",
@@ -183,7 +182,7 @@ func Test_transformCondition(t *testing.T) {
 				},
 			},
 			want: &fnv1.Condition{
-				Message: ptr.To("Basic Message"),
+				Message: new("Basic Message"),
 				Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 				Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 				Type:    "TestType",
@@ -267,7 +266,7 @@ func Test_UpdateResponseWithCondition(t *testing.T) {
 			args: args{
 				rsp: &fnv1.RunFunctionResponse{},
 				c: &fnv1.Condition{
-					Message: ptr.To("Basic Message"),
+					Message: new("Basic Message"),
 					Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 					Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
 					Type:    "TestType",
@@ -276,7 +275,7 @@ func Test_UpdateResponseWithCondition(t *testing.T) {
 			want: &fnv1.RunFunctionResponse{
 				Conditions: []*fnv1.Condition{
 					{
-						Message: ptr.To("Basic Message"),
+						Message: new("Basic Message"),
 						Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 						Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
 						Type:    "TestType",
@@ -290,7 +289,7 @@ func Test_UpdateResponseWithCondition(t *testing.T) {
 				rsp: &fnv1.RunFunctionResponse{
 					Conditions: []*fnv1.Condition{
 						{
-							Message: ptr.To("Existing Message"),
+							Message: new("Existing Message"),
 							Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 							Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 							Type:    "ExistingTestType",
@@ -298,7 +297,7 @@ func Test_UpdateResponseWithCondition(t *testing.T) {
 					},
 				},
 				c: &fnv1.Condition{
-					Message: ptr.To("Basic Message"),
+					Message: new("Basic Message"),
 					Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 					Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
 					Type:    "TestType",
@@ -307,13 +306,13 @@ func Test_UpdateResponseWithCondition(t *testing.T) {
 			want: &fnv1.RunFunctionResponse{
 				Conditions: []*fnv1.Condition{
 					{
-						Message: ptr.To("Existing Message"),
+						Message: new("Existing Message"),
 						Status:  fnv1.Status_STATUS_CONDITION_TRUE,
 						Target:  fnv1.Target_TARGET_COMPOSITE.Enum(),
 						Type:    "ExistingTestType",
 					},
 					{
-						Message: ptr.To("Basic Message"),
+						Message: new("Basic Message"),
 						Status:  fnv1.Status_STATUS_CONDITION_FALSE,
 						Target:  fnv1.Target_TARGET_COMPOSITE_AND_CLAIM.Enum(),
 						Type:    "TestType",
