@@ -1985,7 +1985,7 @@ func TestRunFunction(t *testing.T) {
 										Labels: map[string]string{"app": "test"},
 									},
 								},
-								Namespace: ptr.To("default"),
+								Namespace: new("default"),
 							},
 						},
 					},
