@@ -839,3 +839,98 @@ func Test_getCredentialData(t *testing.T) {
 		})
 	}
 }
+
+func Test_nilSafeListFuncs(t *testing.T) {
+	type args struct {
+		val string
+	}
+	type want struct {
+		rsp string
+		err error
+	}
+	cases := map[string]struct {
+		reason string
+		args   args
+		want   want
+	}{
+		"FirstOnMissingFieldReturnsNil": {
+			reason: "first on a missing (nil) field should not panic and should render nothing",
+			args: args{
+				val: `ip: {{ (first .missing).ip }}`,
+			},
+			want: want{
+				rsp: `ip: <no value>`,
+			},
+		},
+		"LastOnMissingFieldReturnsNil": {
+			reason: "last on a missing (nil) field should not panic and should render nothing",
+			args: args{
+				val: `ip: {{ (last .missing).ip }}`,
+			},
+			want: want{
+				rsp: `ip: <no value>`,
+			},
+		},
+		"RestOnMissingFieldReturnsEmpty": {
+			reason: "rest on a missing (nil) field should not panic and should render an empty list",
+			args: args{
+				val: `items: {{ rest .missing }}`,
+			},
+			want: want{
+				rsp: `items: []`,
+			},
+		},
+		"InitialOnMissingFieldReturnsEmpty": {
+			reason: "initial on a missing (nil) field should not panic and should render an empty list",
+			args: args{
+				val: `items: {{ initial .missing }}`,
+			},
+			want: want{
+				rsp: `items: []`,
+			},
+		},
+		"FirstOnPopulatedListStillWorks": {
+			reason: "first on a populated list should keep returning the first element",
+			args: args{
+				val: `ip: {{ first .ips }}`,
+			},
+			want: want{
+				rsp: `ip: 10.0.0.1`,
+			},
+		},
+		"FirstOnUnsupportedTypeReturnsError": {
+			reason: "first on an unsupported (non-list) type should return an error, not panic",
+			args: args{
+				val: `ip: {{ first .scalar }}`,
+			},
+			want: want{
+				err: cmpopts.AnyError,
+			},
+		},
+	}
+
+	data := map[string]any{
+		"ips":    []any{"10.0.0.1", "10.0.0.2"},
+		"scalar": "not-a-list",
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			tpl, err := GetNewTemplateWithFunctionMaps(nil).Parse(tc.args.val)
+			if err != nil {
+				t.Fatalf("%s\nParse(...): unexpected error: %v", tc.reason, err)
+			}
+
+			rsp := &bytes.Buffer{}
+			err = tpl.Execute(rsp, data)
+			if tc.want.err == nil {
+				if diff := cmp.Diff(tc.want.rsp, rsp.String()); diff != "" {
+					t.Errorf("%s\nExecute(...): -want rsp, +got rsp:\n%s", tc.reason, diff)
+				}
+			}
+			if diff := cmp.Diff(tc.want.err, err, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("%s\nExecute(...): -want err, +got err:\n%s", tc.reason, diff)
+			}
+		})
+	}
+}

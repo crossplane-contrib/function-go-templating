@@ -60,9 +60,35 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	sprigFuncs := sprig.FuncMap()
 	delete(sprigFuncs, "env")
 	delete(sprigFuncs, "expandenv")
+
+	// Sprig's first, last, rest, and initial call reflect.TypeOf(list).Kind()
+	// without guarding against an untyped nil, so accessing a missing observed
+	// field (e.g. a status not yet populated) panics and fails the whole
+	// reconcile. Replace them with wrappers that treat a nil input as an empty
+	// result and defer to Sprig's "must" variants, which report unsupported
+	// types as errors instead of panicking.
+	// see: https://github.com/crossplane-contrib/function-go-templating/issues/78
+	sprigFuncs["first"] = nilSafeList(sprigFuncs["mustFirst"].(func(any) (any, error)))
+	sprigFuncs["last"] = nilSafeList(sprigFuncs["mustLast"].(func(any) (any, error)))
+	sprigFuncs["rest"] = nilSafeList(sprigFuncs["mustRest"].(func(any) ([]any, error)))
+	sprigFuncs["initial"] = nilSafeList(sprigFuncs["mustInitial"].(func(any) ([]any, error)))
+
 	tpl.Funcs(sprigFuncs)
 
 	return tpl
+}
+
+// nilSafeList wraps a Sprig list accessor so that a nil input returns the zero
+// value instead of panicking. Valid inputs keep the wrapped function's
+// behavior, including its error for unsupported types.
+func nilSafeList[T any](fn func(any) (T, error)) func(any) (T, error) {
+	return func(list any) (T, error) {
+		if list == nil {
+			var zero T
+			return zero, nil
+		}
+		return fn(list)
+	}
 }
 
 func randomChoice(choices ...string) string {
