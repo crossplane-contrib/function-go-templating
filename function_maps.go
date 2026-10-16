@@ -68,10 +68,18 @@ func GetNewTemplateWithFunctionMaps(delims *v1beta1.Delims) *template.Template {
 	// result and defer to Sprig's "must" variants, which report unsupported
 	// types as errors instead of panicking.
 	// see: https://github.com/crossplane-contrib/function-go-templating/issues/78
-	sprigFuncs["first"] = nilSafeList(sprigFuncs["mustFirst"].(func(any) (any, error)))
-	sprigFuncs["last"] = nilSafeList(sprigFuncs["mustLast"].(func(any) (any, error)))
-	sprigFuncs["rest"] = nilSafeList(sprigFuncs["mustRest"].(func(any) ([]any, error)))
-	sprigFuncs["initial"] = nilSafeList(sprigFuncs["mustInitial"].(func(any) ([]any, error)))
+	if mustFirst, ok := sprigFuncs["mustFirst"].(func(any) (any, error)); ok {
+		sprigFuncs["first"] = nilSafeList(mustFirst)
+	}
+	if mustLast, ok := sprigFuncs["mustLast"].(func(any) (any, error)); ok {
+		sprigFuncs["last"] = nilSafeList(mustLast)
+	}
+	if mustRest, ok := sprigFuncs["mustRest"].(func(any) ([]any, error)); ok {
+		sprigFuncs["rest"] = nilSafeList(mustRest)
+	}
+	if mustInitial, ok := sprigFuncs["mustInitial"].(func(any) ([]any, error)); ok {
+		sprigFuncs["initial"] = nilSafeList(mustInitial)
+	}
 
 	tpl.Funcs(sprigFuncs)
 
