@@ -312,9 +312,17 @@ func (f *Function) RunFunction(_ context.Context, req *fnv1.RunFunctionRequest) 
 			switch obj.GetKind() {
 			case "CompositeConnectionDetails":
 				// Set composite resource's connection details.
-				con, _ := cd.Resource.GetStringObject("data")
+				con, err := cd.Resource.GetStringObject("data")
+				if err != nil {
+					response.Fatal(rsp, errors.Wrap(err, "cannot get connection details data from CompositeConnectionDetails"))
+					return rsp, nil
+				}
 				for k, v := range con {
-					d, _ := base64.StdEncoding.DecodeString(v)
+					d, err := base64.StdEncoding.DecodeString(v)
+					if err != nil {
+						response.Fatal(rsp, errors.Wrapf(err, "cannot decode base64 connection detail for key %q", k))
+						return rsp, nil
+					}
 					desiredComposite.ConnectionDetails[k] = d
 				}
 			case "ClaimConditions":
