@@ -1,0 +1,7 @@
+apiVersion: aws.platformref.upbound.io/v1alpha1
+kind: XUser
+metadata:
+  name: test-user
+spec:
+  id: test-user
+  count: 2
