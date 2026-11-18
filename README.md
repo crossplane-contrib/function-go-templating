@@ -37,7 +37,7 @@ spec:
                 gotemplating.fn.crossplane.io/composition-resource-name: bucket
             spec:
               forProvider:
-                region: {{ .observed.composite.resource.spec.region }}
+                region: {{ .observed.composite.resource.spec.region | quote }}
     - step: automatically-detect-ready-composed-resources
       functionRef:
         name: function-auto-ready
@@ -80,6 +80,47 @@ engine to return an error when a missing key is detected, instead of setting the
 
 The maximum size of received messages (in MB) defaults to `4`. This can be overridden by the
 `--max-recv-message-size` CLI flag or the `MAX_RECV_MESSAGE_SIZE` environment variable.
+
+### Quoting values from the composite resource
+
+The function renders the template to text, then splits it into resources at
+every line that starts with `---`. A value inserted into the template unquoted
+can contain new lines, so it can add fields or whole extra resources that your
+Composition doesn't declare.
+
+Anyone who can create or edit a composite resource controls its `spec`. For
+example, with the template line `region: {{ .observed.composite.resource.spec.region }}`,
+a user could set:
+
+```yaml
+spec:
+  region: |-
+    us-east-1
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: not-in-the-composition
+      annotations:
+        gotemplating.fn.crossplane.io/composition-resource-name: injected
+```
+
+The function would return the `ConfigMap` as an extra composed resource, and
+Crossplane would create it.
+
+To prevent this, pipe string values through `quote` or `toJson`. Both escape
+new lines and quotes, so the value always stays a single string:
+
+```yaml
+region: {{ .observed.composite.resource.spec.region | quote }}
+```
+
+Use `toYaml` with `nindent` for maps and lists. Don't rely on `squote` or on
+quotes written into the template, such as `"{{ .observed.composite.resource.spec.region }}"`:
+neither escapes new lines or quotes.
+
+Constrain fields in the composite resource definition (XRD) schema too, for
+example with `enum` or `pattern`.
 
 ### Connection Details
 
