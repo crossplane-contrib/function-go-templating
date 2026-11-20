@@ -37,11 +37,14 @@ metadata:
 	cdWithReadyWrong      = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd","gotemplating.fn.crossplane.io/ready":"wrongValue"},"name":"cool-cd"}}`
 	cdWithReadyTrue       = `{"apiVersion":"example.org/v1","kind":"CD","metadata":{"annotations":{"gotemplating.fn.crossplane.io/composition-resource-name":"cool-cd","gotemplating.fn.crossplane.io/ready":"True"},"name":"cool-cd"}}`
 
-	metaResourceInvalid        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
-	metaResourceConDet         = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}`  // encoded string "value"
-	metaResourceConDet2        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key2":"ZXVsYXY="}}` // encoded string "eulav"
-	metaResourceContextInvalid = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data": 1 }`
-	metaResourceContext        = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"apiextensions.crossplane.io/environment":{ "new":"value"}}}`
+	metaResourceInvalid             = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"InvalidMeta"}`
+	metaResourceConDet              = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"dmFsdWU="}}`  // encoded string "value"
+	metaResourceConDet2             = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key2":"ZXVsYXY="}}` // encoded string "eulav"
+	metaResourceConDetInvalidBase64 = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":{"key":"not-base64!!!"}}`
+	metaResourceConDetMissingData   = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails"}`
+	metaResourceConDetDataTypeError = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"CompositeConnectionDetails","data":"notamap"}`
+	metaResourceContextInvalid      = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data": 1 }`
+	metaResourceContext             = `{"apiVersion":"meta.gotemplating.fn.crossplane.io/v1alpha1","kind":"Context","data":{"apiextensions.crossplane.io/environment":{ "new":"value"}}}`
 
 	xr                             = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2}}`
 	xrWithStatus                   = `{"apiVersion":"example.org/v1","kind":"XR","metadata":{"name":"cool-xr"},"spec":{"count":2},"status":{"ready":"true"}}`
@@ -1001,6 +1004,156 @@ func TestRunFunction(t *testing.T) {
 						Composite: &fnv1.Resource{
 							Resource:          resource.MustStructJSON(xr),
 							ConnectionDetails: map[string][]byte{"key": []byte("value"), "key2": []byte("eulav")},
+						},
+					},
+				},
+			},
+		},
+		"CompositeConnectionDetailsInvalidBase64": {
+			reason: "The Function should return an error if base64 data is invalid.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDetInvalidBase64},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot decode base64 connection detail for key \"key\": illegal base64 data at input byte 3",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"CompositeConnectionDetailsMissingDataField": {
+			reason: "The Function should return an error if data field is missing.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDetMissingData},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot get connection details data from CompositeConnectionDetails: data: no such field",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"CompositeConnectionDetailsDataTypeError": {
+			reason: "The Function should return an error if data field is not a map.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDetDataTypeError},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Results: []*fnv1.Result{
+						{
+							Severity: fnv1.Severity_SEVERITY_FATAL,
+							Message:  "cannot get connection details data from CompositeConnectionDetails: data: not an object",
+							Target:   fnv1.Target_TARGET_COMPOSITE.Enum(),
+						},
+					},
+				},
+			},
+		},
+		"CompositeConnectionDetailsValidBase64Positive": {
+			reason: "The Function should return the desired composite with valid base64 encoded connection details.",
+			args: args{
+				req: &fnv1.RunFunctionRequest{
+					Input: resource.MustStructObject(
+						&v1beta1.GoTemplate{
+							Source: v1beta1.InlineSource,
+							Inline: &v1beta1.TemplateSourceInline{Template: metaResourceConDet},
+						}),
+					Observed: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource: resource.MustStructJSON(xr),
+						},
+					},
+				},
+			},
+			want: want{
+				rsp: &fnv1.RunFunctionResponse{
+					Meta: &fnv1.ResponseMeta{Ttl: durationpb.New(response.DefaultTTL)},
+					Desired: &fnv1.State{
+						Composite: &fnv1.Resource{
+							Resource:          resource.MustStructJSON(xr),
+							ConnectionDetails: map[string][]byte{"key": []byte("value")},
 						},
 					},
 				},
